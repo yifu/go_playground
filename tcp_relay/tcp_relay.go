@@ -22,25 +22,25 @@ func main() {
 	}
 
 	for {
-		upStreamPeer, err := ln.Accept()
+		upStreamConn, err := ln.Accept()
 		if err != nil {
 			fmt.Println("Err accepting:", err.Error())
 			return
 		}
 
-		go processConn(upStreamPeer, remoteAddrPort)
+		go processConn(upStreamConn, remoteAddrPort)
 	}
 }
 
-func processConn(upStreamPeer net.Conn, downStreamAddr string) {
-	downStreamPeer, err := net.Dial("tcp", downStreamAddr)
+func processConn(upStreamConn net.Conn, downStreamAddr string) {
+	downStreamConn, err := net.Dial("tcp", downStreamAddr)
 	if err != nil {
 		fmt.Println("Remote conn:", err)
 		return
 	}
 
-	go stream(upStreamPeer, downStreamPeer)
-	go stream(downStreamPeer, upStreamPeer)
+	go stream(upStreamConn, downStreamConn)
+	go stream(downStreamConn, upStreamConn)
 }
 
 func stream(up, down net.Conn) {
