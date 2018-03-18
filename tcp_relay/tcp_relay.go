@@ -3,11 +3,19 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 )
 
 func main() {
-	ln, err := net.Listen("tcp", ":55555")
+	if len(os.Args) != 3 {
+		fmt.Println(os.Args[0], "[localAddr]:localPort remoteAddr:remotePort")
+		return
+	}
 
+	localAddrPort := os.Args[1]
+	remoteAddrPort := os.Args[2]
+
+	ln, err := net.Listen("tcp", localAddrPort)
 	if err != nil {
 		fmt.Println("Err listening:", err.Error())
 		return
@@ -20,12 +28,12 @@ func main() {
 			return
 		}
 
-		go processConn(upStreamPeer)
+		go processConn(upStreamPeer, remoteAddrPort)
 	}
 }
 
-func processConn(upStreamPeer net.Conn) {
-	downStreamPeer, err := net.Dial("tcp", "localhost:60000")
+func processConn(upStreamPeer net.Conn, downStreamAddr string) {
+	downStreamPeer, err := net.Dial("tcp", downStreamAddr)
 	if err != nil {
 		fmt.Println("Remote conn:", err)
 		return
