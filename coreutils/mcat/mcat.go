@@ -18,6 +18,10 @@ func makeInputReader() io.Reader {
 		return os.Stdin
 	}
 
+	return io.MultiReader(makeFileSlice()...)
+}
+
+func makeFileSlice() []io.Reader {
 	files := make([]io.Reader, 0)
 
 	for i, filename := range os.Args {
@@ -26,8 +30,7 @@ func makeInputReader() io.Reader {
 		}
 		files = append(files, openFile(filename))
 	}
-
-	return io.MultiReader(files...)
+	return files
 }
 
 func openFile(filename string) io.Reader {
