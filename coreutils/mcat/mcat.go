@@ -8,8 +8,7 @@ import (
 )
 
 func main() {
-	var inputrdr io.Reader = makeInputReader()
-	if _, err := io.Copy(os.Stdout, inputrdr); err != nil {
+	if _, err := io.Copy(os.Stdout, makeInputReader()); err != nil {
 		fmt.Println("Err:", err)
 	}
 }
