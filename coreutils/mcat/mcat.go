@@ -8,8 +8,9 @@ import (
 )
 
 func main() {
+	var inputrdr io.Reader
 	if len(os.Args) == 1 {
-		io.Copy(os.Stdout, os.Stdin)
+		inputrdr = os.Stdin
 	} else {
 		readers := make([]io.Reader, 0)
 
@@ -28,10 +29,11 @@ func main() {
 			readers = append(readers, r)
 		}
 
-		mr := io.MultiReader(readers...)
+		inputrdr = io.MultiReader(readers...)
 
-		if _, err := io.Copy(os.Stdout, mr); err != nil {
-			fmt.Println("Err:", err)
-		}
+	}
+
+	if _, err := io.Copy(os.Stdout, inputrdr); err != nil {
+		fmt.Println("Err:", err)
 	}
 }
