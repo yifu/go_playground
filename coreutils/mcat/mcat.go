@@ -18,22 +18,22 @@ func makeInputReader() io.Reader {
 		return os.Stdin
 	}
 
-	readers := make([]io.Reader, 0)
+	files := make([]io.Reader, 0)
 
-	for i, elt := range os.Args {
+	for i, filename := range os.Args {
 		if i == 0 {
 			continue
 		}
-
-		var r io.Reader
-		if f, err := os.Open(elt); err != nil {
-			r = strings.NewReader(err.Error() + "\n")
-		} else {
-			r = f
-		}
-
-		readers = append(readers, r)
+		files = append(files, openFile(filename))
 	}
 
-	return io.MultiReader(readers...)
+	return io.MultiReader(files...)
+}
+
+func openFile(filename string) io.Reader {
+	if f, err := os.Open(filename); err != nil {
+		return strings.NewReader(err.Error() + "\n")
+	} else {
+		return f
+	}
 }
