@@ -17,7 +17,14 @@ func main() {
 
 	flag.Parse()
 
-	infos, err := ioutil.ReadDir(".")
+	var dir string
+	if len(flag.Args()) == 0 {
+		dir = "."
+	} else {
+		dir = flag.Arg(0)
+	}
+
+	infos, err := ioutil.ReadDir(dir)
 	if err != nil {
 		fmt.Println("Err:", err)
 		return
