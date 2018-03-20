@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 )
 
 func main() {
@@ -13,6 +14,9 @@ func main() {
 	}
 
 	for _, fileinfo := range infos {
+		if strings.HasPrefix(fileinfo.Name(), ".") {
+			continue
+		}
 		fmt.Println(fileinfo.Name())
 	}
 }
