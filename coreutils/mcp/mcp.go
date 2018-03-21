@@ -34,23 +34,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	fileInfo, err := os.Stat(os.Args[2])
-	if err != nil {
-		fmt.Print(os.Args[0], ": ", err.Error(), "\n")
-		os.Exit(2)
-	}
-
-	if !fileInfo.IsDir() {
-		if len(os.Args) == 3 {
-
-			// TODO Check both param points to the same file using os.SameFile().
-			if os.Args[1] == os.Args[2] {
-				os.Exit(0)
-			}
-
-			// TODO Copy the src file into the dst file open(chemin, O_WRONLY | O_TRUNC) ou open(chemin,  O_WRONLY | O_CREAT,  mode)
-		}
-		flag.Usage()
+	// TODO FIXME This checking is not good. We must verify that there is only valid files (this no dir).
+	if allParametersAreFiles() {
+		processAllParamAreFiles()
 		os.Exit(1)
 	}
 
@@ -67,6 +53,48 @@ func main() {
 
 func printErr(e error) {
 	fmt.Print(os.Args[0], ": ", e.Error(), "\n")
+}
+
+func allParametersAreFiles() bool {
+	allRegular := true
+
+	for i, param := range os.Args {
+		if i == 0 {
+			continue
+		}
+
+		fileInfo, err := os.Stat(param)
+		if err != nil {
+			printErr(err)
+			os.Exit(2)
+		}
+
+		if !fileInfo.Mode().IsRegular() {
+			fmt.Println("not regular")
+			allRegular = false
+		} else {
+			fmt.Println("regular")
+		}
+	}
+
+	return allRegular
+}
+
+func processAllParamAreFiles() {
+	if len(os.Args) == 3 {
+
+		// TODO Check both param points to the same file using os.SameFile().
+		if os.Args[1] == os.Args[2] {
+			// When both files are the same, cp does nothing.
+			os.Exit(0)
+		}
+
+		// TODO Copy the src file into the dst file open(chemin, O_WRONLY | O_TRUNC) ou open(chemin,  O_WRONLY | O_CREAT,  mode)
+
+		os.Exit(0)
+	}
+	flag.Usage()
+	os.Exit(1)
 }
 
 func copyFileInDir(srcFileName, destDirName string) {
