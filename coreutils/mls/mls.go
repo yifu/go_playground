@@ -65,7 +65,7 @@ func processFile(fileInfo os.FileInfo) {
 		stat := fileInfo.Sys().(*syscall.Stat_t)
 		dateMtime := time.Unix(stat.Mtim.Unix()).Format("2 Jan")
 		hourMtime := time.Unix(stat.Mtim.Unix()).Format("15:04")
-		fmt.Printf("%v\t%v\t%v\t%v\t%v\t%v\t%v\t",
+		fmt.Printf("%v %4d %v %v %5v %6v %v ",
 			fileInfo.Mode(), stat.Nlink, stat.Uid, stat.Gid,
 			stat.Size, dateMtime, hourMtime)
 	}
