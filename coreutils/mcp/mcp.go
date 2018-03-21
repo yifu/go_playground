@@ -8,6 +8,19 @@ import (
 	"path/filepath"
 )
 
+// TESTS:
+// 1a- mcp file1 file2 (file2 does not exist)
+// 1b- mcp file1 file2 (file2 already exist)
+// 1c- mcp file1 file1 (does nothing, check with mtime)
+// 1d- mcp file1 file2 *then* mcp -f file1 file2 (with file2 being beforehand chmod to be not openable. So mcp must unlink() file2)
+// 2- mcp file1 ./file2 somewhere/file3 ../file4 ..///../file5 /tmp/file6 dir
+// 3- mcp file1 file2 ./dir
+// 4- mcp file2 file2 ../dir
+// 5- mcp file1 file2 /tmp/dir
+// 6- mcp file1 file2 .//.././../dir
+// 7- mcp -r /a /b when b already exists
+// Every time: check the resulting mode for every new file/dir.
+
 func main() {
 	flag.Usage = func() {
 		fmt.Print("Usage: ", os.Args[0], " sourcefile destdi/\n")
