@@ -34,14 +34,14 @@ func main() {
 
 	switch {
 	case fileInfo.IsDir():
-		processDir(fileInfo)
+		processDir(param)
 	default:
 		processFile(fileInfo)
 	}
 }
 
-func processDir(dir os.FileInfo) {
-	infos, err := ioutil.ReadDir(dir.Name())
+func processDir(dirPath string) {
+	infos, err := ioutil.ReadDir(dirPath)
 	if err != nil {
 		fmt.Println("Err:", err)
 		os.Exit(1)
