@@ -9,9 +9,7 @@ import (
 	"syscall"
 )
 
-var showHidden = false
-
-var showInode = false
+var showHidden, showInode = false, false
 
 func main() {
 	flag.BoolVar(&showHidden, "a", false, "Show hidden files.")
