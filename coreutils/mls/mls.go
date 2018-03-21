@@ -7,13 +7,15 @@ import (
 	"os"
 	"strings"
 	"syscall"
+	"time"
 )
 
-var showHidden, showInode = false, false
+var showHidden, showInode, longListingFmt = false, false, false
 
 func main() {
 	flag.BoolVar(&showHidden, "a", false, "Show hidden files.")
 	flag.BoolVar(&showInode, "i", false, "Show inode numbers.")
+	flag.BoolVar(&longListingFmt, "l", false, "Enable long listing format.")
 
 	flag.Parse()
 
@@ -57,6 +59,15 @@ func processDir(dirPath string) {
 func processFile(fileInfo os.FileInfo) {
 	if showInode {
 		fmt.Print(uint64(fileInfo.Sys().(*syscall.Stat_t).Ino), " ")
+	}
+
+	if longListingFmt {
+		stat := fileInfo.Sys().(*syscall.Stat_t)
+		dateMtime := time.Unix(stat.Mtim.Unix()).Format("2 Jan")
+		hourMtime := time.Unix(stat.Mtim.Unix()).Format("15:04")
+		fmt.Printf("%v\t%v\t%v\t%v\t%v\t%v\t%v\t",
+			fileInfo.Mode(), stat.Nlink, stat.Uid, stat.Gid,
+			stat.Size, dateMtime, hourMtime)
 	}
 
 	fmt.Println(fileInfo.Name())
