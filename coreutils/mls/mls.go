@@ -19,24 +19,34 @@ func main() {
 
 	flag.Parse()
 
-	var param string
+	params := make([]string, 0)
 	if len(flag.Args()) == 0 {
-		param = "."
+		params = append(params, ".")
 	} else {
-		param = flag.Arg(0)
+		params = flag.Args()
 	}
 
-	fileInfo, err := os.Stat(param)
-	if err != nil {
-		fmt.Println(os.Args[0]+":", err.Error())
-		os.Exit(1)
-	}
+	for i, param := range params {
+		fileInfo, err := os.Stat(param)
+		if err != nil {
+			fmt.Println(os.Args[0]+":", err.Error())
+			os.Exit(1)
+		}
 
-	switch {
-	case fileInfo.IsDir():
-		processDir(param)
-	default:
-		processFile(fileInfo)
+		if len(params) > 1 {
+			fmt.Print(param, ":\n")
+		}
+
+		switch {
+		case fileInfo.IsDir():
+			processDir(param)
+		default:
+			processFile(fileInfo)
+		}
+
+		if i != len(params)-1 {
+			fmt.Println()
+		}
 	}
 }
 
