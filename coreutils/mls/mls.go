@@ -29,7 +29,7 @@ func main() {
 	fileInfo, err := os.Stat(param)
 	if err != nil {
 		fmt.Println(os.Args[0]+":", err.Error())
-		return
+		os.Exit(1)
 	}
 
 	switch {
@@ -44,7 +44,7 @@ func processDir(dir os.FileInfo) {
 	infos, err := ioutil.ReadDir(dir.Name())
 	if err != nil {
 		fmt.Println("Err:", err)
-		return
+		os.Exit(1)
 	}
 
 	for _, fileInfo := range infos {
