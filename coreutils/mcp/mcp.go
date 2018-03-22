@@ -54,8 +54,18 @@ func main() {
 
 	// TODO FIXME This checking is not good. We must verify that there is only valid files (this no dir).
 	if paramCount == 2 {
-		copyFileIntoFile(os.Args[1], os.Args[2])
-		os.Exit(1)
+		srcName, dstName := os.Args[1], os.Args[2]
+		srcInfo, err := os.Stat(srcName)
+		if err != nil {
+			printErr(err)
+			os.Exit(2)
+		}
+		if srcInfo.IsDir() {
+			printErr(OmittingDirErr{dirName: srcName})
+			os.Exit(1)
+		}
+		copyFileIntoFile(srcName, dstName)
+		os.Exit(0)
 	}
 
 	destDir := os.Args[len(os.Args)-1]
