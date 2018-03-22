@@ -99,7 +99,6 @@ func printErr(e error) {
 }
 
 func copyFileIntoFile(srcPath, dstPath string) {
-	//fmt.Println("copy into file")
 	src, err := os.Open(srcPath)
 	if err != nil {
 		printErr(err)
@@ -113,12 +112,11 @@ func copyFileIntoFile(srcPath, dstPath string) {
 		os.Exit(2)
 	}
 
-	dst, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_TRUNC, 0 /*perm is useless when O_CREATE is not specified*/)
-	//fmt.Println("open trunc")
+	var dst *os.File
+	dstStat, err := os.Stat(dstPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			dst, err = os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE, srcStat.Mode().Perm())
-			//fmt.Println("open create", dst, ", err", err)
 			if err != nil {
 				printErr(err)
 				os.Exit(2)
@@ -126,24 +124,20 @@ func copyFileIntoFile(srcPath, dstPath string) {
 			defer dst.Close()
 		} else {
 			printErr(err)
-			os.Exit(1)
+			os.Exit(2)
+		}
+	} else {
+		if os.SameFile(srcStat, dstStat) {
+			os.Exit(0)
+		}
+
+		dst, err = os.OpenFile(dstPath, os.O_WRONLY|os.O_TRUNC, 0 /*perm is useless when O_CREATE is not specified*/)
+		if err != nil {
+			printErr(err)
+			os.Exit(2)
 		}
 	}
-	//fmt.Println("after open trunc/create", dst)
 
-	dstStat, err := dst.Stat()
-	if err != nil {
-		//fmt.Println("dst stat", dst)
-		printErr(err)
-		os.Exit(2)
-	}
-
-	if os.SameFile(srcStat, dstStat) {
-		//fmt.Println("same file? yes")
-		os.Exit(0)
-	}
-
-	//fmt.Println("copy file")
 	if _, err := io.Copy(dst, src); err != nil {
 		printErr(err)
 		os.Exit(2)
