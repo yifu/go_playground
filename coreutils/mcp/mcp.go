@@ -94,11 +94,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	for i, param := range os.Args {
-		if i == 0 || i == len(os.Args)-1 {
-			continue
-		}
-
+	srcList := os.Args[1 : len(os.Args)-1]
+	for i, param := range srcList {
 		fileInfo, err := os.Stat(param)
 		if err != nil {
 			printErr(NoSuchFileOrDirErr{paramName: param})
@@ -111,7 +108,7 @@ func main() {
 		}
 
 		_, filename := filepath.Split(param)
-		if findFilename(os.Args[1:i], filename) {
+		if findFilename(srcList[:i], filename) {
 			fmt.Println("skip")
 			continue
 		}
