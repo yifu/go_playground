@@ -86,24 +86,40 @@ func main() {
 		os.Exit(1)
 	}
 
-	for i, filename := range os.Args {
+	for i, param := range os.Args {
 		if i == 0 || i == len(os.Args)-1 {
 			continue
 		}
 
-		// TODO We must check if the filename has already been copied into the dest dir during this mcp execution. When it's been the case, we skip after priting a message.
-		fileInfo, err := os.Stat(filename)
+		fileInfo, err := os.Stat(param)
 		if err != nil {
 			printErr(err)
 			os.Exit(2)
 		}
 		if fileInfo.IsDir() {
-			printErr(OmittingDirErr{dirName: filename})
+			printErr(OmittingDirErr{dirName: param})
 			continue
 		}
 
-		copyFileIntoDir(filename, destDir)
+		_, filename := filepath.Split(param)
+		if findFilename(os.Args[1:i], filename) {
+			fmt.Println("skip")
+			continue
+		}
+
+		copyFileIntoDir(param, destDir)
 	}
+}
+
+func findFilename(filepaths []string, filename string) bool {
+	for _, param := range filepaths {
+		_, name := filepath.Split(param)
+		if filename == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 func printErr(e error) {
