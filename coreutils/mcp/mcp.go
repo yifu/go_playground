@@ -29,14 +29,16 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	if len(os.Args) < 2 {
+	paramNumbers := len(os.Args) - 1
+
+	if paramNumbers < 2 {
 		flag.Usage()
 		os.Exit(1)
 	}
 
 	// TODO FIXME This checking is not good. We must verify that there is only valid files (this no dir).
-	if allParametersAreFiles() {
-		processAllParamAreFiles()
+	if paramNumbers == 2 {
+		copyFileIntoFile()
 		os.Exit(1)
 	}
 
@@ -57,37 +59,8 @@ func printErr(e error) {
 	fmt.Print(os.Args[0], ": ", e.Error(), "\n")
 }
 
-func allParametersAreFiles() bool {
-	allRegular := true
-
-	for i, param := range os.Args {
-		if i == 0 {
-			continue
-		}
-
-		fileInfo, err := os.Stat(param)
-		if err != nil {
-			printErr(err)
-			os.Exit(2)
-		}
-
-		if !fileInfo.Mode().IsRegular() {
-			fmt.Println("not regular")
-			allRegular = false
-		} else {
-			fmt.Println("regular")
-		}
-	}
-
-	return allRegular
-}
-
-func processAllParamAreFiles() {
-	if len(os.Args) > 3 {
-		flag.Usage()
-		os.Exit(1)
-	}
-
+func copyFileIntoFile() {
+	//fmt.Println("copy into file")
 	src, err := os.Open(os.Args[1])
 	if err != nil {
 		printErr(err)
@@ -102,9 +75,11 @@ func processAllParamAreFiles() {
 	}
 
 	dst, err := os.OpenFile(os.Args[2], os.O_WRONLY|os.O_TRUNC, 0 /*perm is useless when O_CREATE is not specified*/)
+	//fmt.Println("open trunc")
 	if err != nil {
 		if os.IsNotExist(err) {
-			dst, err := os.OpenFile(os.Args[2], os.O_WRONLY|os.O_CREATE, srcStat.Mode().Perm())
+			dst, err = os.OpenFile(os.Args[2], os.O_WRONLY|os.O_CREATE, srcStat.Mode().Perm())
+			//fmt.Println("open create", dst, ", err", err)
 			if err != nil {
 				printErr(err)
 				os.Exit(2)
@@ -115,24 +90,32 @@ func processAllParamAreFiles() {
 			os.Exit(1)
 		}
 	}
+	//fmt.Println("after open trunc/create", dst)
 
 	dstStat, err := dst.Stat()
 	if err != nil {
+		//fmt.Println("dst stat", dst)
 		printErr(err)
 		os.Exit(2)
 	}
 
 	if os.SameFile(srcStat, dstStat) {
+		//fmt.Println("same file? yes")
 		os.Exit(0)
 	}
 
-	io.Copy(dst, src)
+	//fmt.Println("copy file")
+	if _, err := io.Copy(dst, src); err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+
 	os.Exit(0)
 }
 
 func copyFileInDir(srcFileName, destDirName string) {
 
-	fmt.Println("src=", srcFileName, ", dst=", destDirName)
+	fmt.Println("copy file in dir. src=", srcFileName, ", dst=", destDirName)
 
 	src, err := os.Open(srcFileName)
 	if err != nil {
