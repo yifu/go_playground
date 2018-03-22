@@ -29,22 +29,20 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	paramNumbers := len(os.Args) - 1
+	paramCount := len(os.Args) - 1
 
-	if paramNumbers < 2 {
+	if paramCount < 2 {
 		flag.Usage()
 		os.Exit(1)
 	}
 
 	// TODO FIXME This checking is not good. We must verify that there is only valid files (this no dir).
-	if paramNumbers == 2 {
-		copyFileIntoFile()
+	if paramCount == 2 {
+		copyFileIntoFile(os.Args[1], os.Args[2])
 		os.Exit(1)
 	}
 
 	destDir := os.Args[len(os.Args)-1]
-
-	// TODO Check this dir does exist. If it does not exist, then we must abort. Special stuff are done only when there are only two parameters.
 
 	for i, filename := range os.Args {
 		if i == 0 || i == len(os.Args)-1 {
@@ -59,9 +57,9 @@ func printErr(e error) {
 	fmt.Print(os.Args[0], ": ", e.Error(), "\n")
 }
 
-func copyFileIntoFile() {
+func copyFileIntoFile(srcPath, dstPath string) {
 	//fmt.Println("copy into file")
-	src, err := os.Open(os.Args[1])
+	src, err := os.Open(srcPath)
 	if err != nil {
 		printErr(err)
 		os.Exit(2)
@@ -74,11 +72,11 @@ func copyFileIntoFile() {
 		os.Exit(2)
 	}
 
-	dst, err := os.OpenFile(os.Args[2], os.O_WRONLY|os.O_TRUNC, 0 /*perm is useless when O_CREATE is not specified*/)
+	dst, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_TRUNC, 0 /*perm is useless when O_CREATE is not specified*/)
 	//fmt.Println("open trunc")
 	if err != nil {
 		if os.IsNotExist(err) {
-			dst, err = os.OpenFile(os.Args[2], os.O_WRONLY|os.O_CREATE, srcStat.Mode().Perm())
+			dst, err = os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE, srcStat.Mode().Perm())
 			//fmt.Println("open create", dst, ", err", err)
 			if err != nil {
 				printErr(err)
