@@ -90,7 +90,8 @@ func main() {
 			continue
 		}
 
-		copyFileInDir(filename, destDir)
+		// TODO We must check if the filename has already been copied into the dest dir during this mcp execution. When it's been the case, we skip after priting a message.
+		copyFileIntoDir(filename, destDir)
 	}
 }
 
@@ -144,39 +145,9 @@ func copyFileIntoFile(srcPath, dstPath string) {
 	}
 }
 
-func copyFileInDir(srcFileName, destDirName string) {
+func copyFileIntoDir(srcPath, destDirPath string) {
+	_, srcFileName := filepath.Split(srcPath)
+	dstFilePath := filepath.Join(destDirPath, srcFileName)
 
-	fmt.Println("copy file in dir. src=", srcFileName, ", dst=", destDirName)
-
-	src, err := os.Open(srcFileName)
-	if err != nil {
-		fmt.Print(os.Args[0], ": ", err.Error())
-		os.Exit(2)
-	}
-	defer src.Close()
-
-	srcFileInfo, err := src.Stat()
-	if err != nil {
-		printErr(err)
-		os.Exit(1)
-	}
-	perm := srcFileInfo.Mode().Perm()
-
-	_, filename := filepath.Split(filepath.Clean(srcFileName))
-
-	dstFileName := filepath.Clean(destDirName) + string(filepath.Separator) + filename
-
-	fmt.Println("dstfilename = ", dstFileName)
-	dst, err := os.OpenFile(dstFileName, os.O_WRONLY|os.O_CREATE, perm)
-	if err != nil {
-		printErr(err)
-		os.Exit(1)
-	}
-	defer dst.Close()
-	fmt.Println("copy..", src, ", ", dst)
-
-	if _, err := io.Copy(dst, src); err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
+	copyFileIntoFile(srcPath, dstFilePath)
 }
