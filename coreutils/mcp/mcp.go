@@ -69,6 +69,22 @@ func main() {
 	}
 
 	destDir := os.Args[len(os.Args)-1]
+	dstInfo, err := os.Open(destDir)
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+
+	dstStat, err := dstInfo.Stat()
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+
+	if !dstStat.IsDir() {
+		printErr(NotADirErr{paramName: destDir})
+		os.Exit(1)
+	}
 
 	for i, filename := range os.Args {
 		if i == 0 || i == len(os.Args)-1 {
