@@ -142,8 +142,6 @@ func copyFileIntoFile(srcPath, dstPath string) {
 		printErr(err)
 		os.Exit(2)
 	}
-
-	os.Exit(0)
 }
 
 func copyFileInDir(srcFileName, destDirName string) {
