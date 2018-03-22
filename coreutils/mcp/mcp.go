@@ -64,8 +64,13 @@ func main() {
 		srcName, dstName := os.Args[1], os.Args[2]
 		srcInfo, err := os.Stat(srcName)
 		if err != nil {
-			printErr(err)
-			os.Exit(2)
+			if os.IsNotExist(err) {
+				printErr(NoSuchFileOrDirErr{paramName: srcName})
+				os.Exit(1)
+			} else {
+				printErr(err)
+				os.Exit(2)
+			}
 		}
 		if srcInfo.IsDir() {
 			printErr(OmittingDirErr{dirName: srcName})
@@ -86,8 +91,14 @@ func main() {
 	for i, param := range srcList {
 		fileInfo, err := os.Stat(param)
 		if err != nil {
-			printErr(NoSuchFileOrDirErr{paramName: param})
-			continue
+			if os.IsNotExist(err) {
+				// TODO We must exit with error number 1 while still processing the rest of the params.
+				printErr(NoSuchFileOrDirErr{paramName: param})
+				continue
+			} else {
+				printErr(err)
+				os.Exit(2)
+			}
 		}
 
 		if fileInfo.IsDir() {
