@@ -91,6 +91,16 @@ func main() {
 		}
 
 		// TODO We must check if the filename has already been copied into the dest dir during this mcp execution. When it's been the case, we skip after priting a message.
+		fileInfo, err := os.Stat(filename)
+		if err != nil {
+			printErr(err)
+			os.Exit(2)
+		}
+		if fileInfo.IsDir() {
+			printErr(OmittingDirErr{dirName: filename})
+			continue
+		}
+
 		copyFileIntoDir(filename, destDir)
 	}
 }
