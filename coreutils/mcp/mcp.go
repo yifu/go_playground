@@ -77,19 +77,7 @@ func main() {
 	}
 
 	destDir := os.Args[len(os.Args)-1]
-	dstInfo, err := os.Open(destDir)
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-
-	dstStat, err := dstInfo.Stat()
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-
-	if !dstStat.IsDir() {
+	if !isDir(destDir) {
 		printErr(NotADirErr{paramName: destDir})
 		os.Exit(1)
 	}
@@ -115,6 +103,22 @@ func main() {
 
 		copyFileIntoDir(param, destDir)
 	}
+}
+
+func isDir(destDir string) bool {
+	dstInfo, err := os.Open(destDir)
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+
+	dstStat, err := dstInfo.Stat()
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+
+	return dstStat.IsDir()
 }
 
 func findFilename(filepaths []string, filename string) bool {
