@@ -37,6 +37,14 @@ func (err NotADirErr) Error() string {
 	return fmt.Sprintf("Target %q is not a directory", err.paramName)
 }
 
+type NoSuchFileOrDirErr struct {
+	paramName string
+}
+
+func (err NoSuchFileOrDirErr) Error() string {
+	return fmt.Sprintf("%q No such file or directory", err.paramName)
+}
+
 func main() {
 	flag.Usage = func() {
 		fmt.Print("Usage: ", os.Args[0], " sourcefile destdi/\n")
@@ -93,9 +101,10 @@ func main() {
 
 		fileInfo, err := os.Stat(param)
 		if err != nil {
-			printErr(err)
-			os.Exit(2)
+			printErr(NoSuchFileOrDirErr{paramName: param})
+			continue
 		}
+
 		if fileInfo.IsDir() {
 			printErr(OmittingDirErr{dirName: param})
 			continue
