@@ -63,6 +63,7 @@ func main() {
 			printErr(OmittingDirErr{dirName: srcName})
 			os.Exit(1)
 		}
+		// TODO When the second parameter is a dir, it must work.
 		copyFileIntoFile(srcName, dstName)
 		os.Exit(0)
 	}
