@@ -42,6 +42,8 @@ func main() {
 
 	destDir := os.Args[len(os.Args)-1]
 
+	// TODO Check this dir does exist. If it does not exist, then we must abort. Special stuff are done only when there are only two parameters.
+
 	for i, filename := range os.Args {
 		if i == 0 || i == len(os.Args)-1 {
 			continue
@@ -81,23 +83,51 @@ func allParametersAreFiles() bool {
 }
 
 func processAllParamAreFiles() {
-	if len(os.Args) == 3 {
+	if len(os.Args) > 3 {
+		flag.Usage()
+		os.Exit(1)
+	}
 
-		// TODO Check both param points to the same file using os.SameFile().
-		if os.Args[1] == os.Args[2] {
-			// When both files are the same, cp does nothing.
-			os.Exit(0)
-		}
+	fileInfo1, err := os.Stat(os.Args[1])
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
 
-		// TODO Copy the src file into the dst file open(chemin, O_WRONLY | O_TRUNC) ou open(chemin,  O_WRONLY | O_CREAT,  mode)
+	fileInfo2, err := os.Stat(os.Args[2])
+	if err != nil {
+		printErr(err)
+		// TODO
+		os.Exit(1)
+	}
 
+	if os.SameFile(fileInfo1, fileInfo2) {
 		os.Exit(0)
 	}
-	flag.Usage()
-	os.Exit(1)
+
+	// TODO Copy the src file into the dst file open(chemin, O_WRONLY | O_TRUNC) ou open(chemin,  O_WRONLY | O_CREAT,  mode)
+	src, err := os.Open(os.Args[1])
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+	defer src.Close()
+
+	dst, err := os.OpenFile(os.Args[2], os.O_WRONLY|os.O_TRUNC, fileInfo1.Mode().Perm())
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+	defer dst.Close()
+
+	io.Copy(dst, src)
+	os.Exit(0)
 }
 
 func copyFileInDir(srcFileName, destDirName string) {
+
+	fmt.Println("src=", srcFileName, ", dst=", destDirName)
+
 	src, err := os.Open(srcFileName)
 	if err != nil {
 		fmt.Print(os.Args[0], ": ", err.Error())
@@ -116,6 +146,7 @@ func copyFileInDir(srcFileName, destDirName string) {
 
 	dstFileName := filepath.Clean(destDirName) + string(filepath.Separator) + filename
 
+	fmt.Println("dstfilename = ", dstFileName)
 	dst, err := os.OpenFile(dstFileName, os.O_WRONLY|os.O_CREATE, perm)
 	if err != nil {
 		printErr(err)
