@@ -52,7 +52,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO FIXME This checking is not good. We must verify that there is only valid files (this no dir).
 	if paramCount == 2 {
 		srcName, dstName := os.Args[1], os.Args[2]
 		srcInfo, err := os.Stat(srcName)
