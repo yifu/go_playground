@@ -21,6 +21,22 @@ import (
 // 7- mcp -r /a /b when b already exists
 // Every time: check the resulting mode for every new file/dir.
 
+type OmittingDirErr struct {
+	dirName string
+}
+
+func (err OmittingDirErr) Error() string {
+	return fmt.Sprintf("Omitting directory %q", err.dirName)
+}
+
+type NotADirErr struct {
+	paramName string
+}
+
+func (err NotADirErr) Error() string {
+	return fmt.Sprintf("Target %q is not a directory", err.paramName)
+}
+
 func main() {
 	flag.Usage = func() {
 		fmt.Print("Usage: ", os.Args[0], " sourcefile destdi/\n")
