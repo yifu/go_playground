@@ -97,7 +97,9 @@ func main() {
 
 		_, filename := filepath.Split(param)
 		if findFilename(srcList[:i], filename) {
-			fmt.Println("skip")
+			// TODO complete with the already copied filename
+			// TODO We must exit with status code 1 in the end, but still process the rest of the params.
+			fmt.Printf("%v will not overwrite '' with %q\n", os.Args[0], filename)
 			continue
 		}
 
