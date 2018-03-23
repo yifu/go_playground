@@ -33,6 +33,7 @@ func main() {
 	}
 
 	errorList := copyFiles(dstDir, paramList...)
+
 	for _, err := range errorList {
 		fmt.Println(err.Error())
 	}
@@ -42,36 +43,6 @@ func main() {
 	} else {
 		os.Exit(0)
 	}
-}
-
-func copyFiles(destDir string, srcList ...string) []error {
-	errorList := make([]error, 0)
-	for i, param := range srcList {
-		fileInfo, err := os.Stat(param)
-		if err != nil {
-			if os.IsNotExist(err) {
-				errorList = append(errorList, NoSuchFileOrDirErr{paramName: param})
-				continue
-			} else {
-				printErr(err)
-				os.Exit(2)
-			}
-		}
-
-		if fileInfo.IsDir() {
-			errorList = append(errorList, OmittingDirErr{dirName: param})
-			continue
-		}
-
-		_, filename := filepath.Split(param)
-		if findFilename(srcList[:i], filename) {
-			errorList = append(errorList, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(destDir, filename)})
-			continue
-		}
-
-		copyFileIntoDir(param, destDir)
-	}
-	return errorList
 }
 
 func isDir(destDir string) bool {
@@ -151,13 +122,6 @@ func copyFileIntoFile(srcPath, dstPath string) {
 	}
 }
 
-func copyFileIntoDir(srcPath, destDirPath string) {
-	_, srcFileName := filepath.Split(srcPath)
-	dstFilePath := filepath.Join(destDirPath, srcFileName)
-
-	copyFileIntoFile(srcPath, dstFilePath)
-}
-
 func checkArgsCount() {
 	paramCount := len(os.Args[1:])
 	if paramCount < 2 {
@@ -180,6 +144,43 @@ func processNonExistingTarget(target string, paramList []string) int {
 		printErr(NotADirErr{paramName: target})
 		return 1
 	}
+}
+
+func copyFiles(destDir string, srcList ...string) []error {
+	errorList := make([]error, 0)
+	for i, param := range srcList {
+		fileInfo, err := os.Stat(param)
+		if err != nil {
+			if os.IsNotExist(err) {
+				errorList = append(errorList, NoSuchFileOrDirErr{paramName: param})
+				continue
+			} else {
+				printErr(err)
+				os.Exit(2)
+			}
+		}
+
+		if fileInfo.IsDir() {
+			errorList = append(errorList, OmittingDirErr{dirName: param})
+			continue
+		}
+
+		_, filename := filepath.Split(param)
+		if findFilename(srcList[:i], filename) {
+			errorList = append(errorList, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(destDir, filename)})
+			continue
+		}
+
+		copyFileIntoDir(param, destDir)
+	}
+	return errorList
+}
+
+func copyFileIntoDir(srcPath, destDirPath string) {
+	_, srcFileName := filepath.Split(srcPath)
+	dstFilePath := filepath.Join(destDirPath, srcFileName)
+
+	copyFileIntoFile(srcPath, dstFilePath)
 }
 
 // TODO Replace those structs with fmt.Errorf(fmt, "")
