@@ -50,6 +50,14 @@ func (err NoSuchFileOrDirErr) Error() string {
 	return fmt.Sprintf("%q No such file or directory", err.paramName)
 }
 
+type WillNotOverwriteErr struct {
+	paramName, alreadyCopied string
+}
+
+func (err WillNotOverwriteErr) Error() string {
+	return fmt.Sprintf("Will not overwrite %q with %q\n", err.alreadyCopied, err.paramName)
+}
+
 func main() {
 	flag.Usage = func() {
 		fmt.Print("Usage: ", os.Args[0], " sourcefile destdir/\n")
@@ -92,16 +100,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	copyFiles(destDir, os.Args[1:len(os.Args)-1]...)
+	errorList := copyFiles(destDir, os.Args[1:len(os.Args)-1]...)
+	for _, err := range errorList {
+		fmt.Println(err.Error())
+	}
+
+	if len(errorList) > 0 {
+		os.Exit(1)
+	} else {
+		os.Exit(0)
+	}
 }
 
-func copyFiles(destDir string, srcList ...string) {
+func copyFiles(destDir string, srcList ...string) []error {
+	errorList := make([]error, 0)
 	for i, param := range srcList {
 		fileInfo, err := os.Stat(param)
 		if err != nil {
 			if os.IsNotExist(err) {
-				// TODO We must exit with error number 1 while still processing the rest of the params.
-				printErr(NoSuchFileOrDirErr{paramName: param})
+				errorList = append(errorList, NoSuchFileOrDirErr{paramName: param})
 				continue
 			} else {
 				printErr(err)
@@ -110,20 +127,19 @@ func copyFiles(destDir string, srcList ...string) {
 		}
 
 		if fileInfo.IsDir() {
-			printErr(OmittingDirErr{dirName: param})
+			errorList = append(errorList, OmittingDirErr{dirName: param})
 			continue
 		}
 
 		_, filename := filepath.Split(param)
 		if findFilename(srcList[:i], filename) {
-			// TODO We must exit with status code 1 in the end, but still process the rest of the params.
-			fmt.Printf("%v will not overwrite '' with %q\n", os.Args[0], filename)
+			errorList = append(errorList, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(destDir, filename)})
 			continue
 		}
 
 		copyFileIntoDir(param, destDir)
 	}
-
+	return errorList
 }
 
 func isDir(destDir string) bool {
