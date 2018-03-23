@@ -61,17 +61,6 @@ func isDir(destDir string) bool {
 	return dstStat.IsDir()
 }
 
-func findFilename(filepaths []string, filename string) bool {
-	for _, param := range filepaths {
-		_, name := filepath.Split(param)
-		if filename == name {
-			return true
-		}
-	}
-
-	return false
-}
-
 func printErr(e error) {
 	fmt.Print(os.Args[0], ": ", e.Error(), "\n")
 }
@@ -174,6 +163,17 @@ func copyFiles(dstDir string, srcList ...string) []error {
 		copyFileIntoFile(param, target)
 	}
 	return errorList
+}
+
+func findFilename(filepaths []string, filename string) bool {
+	for _, param := range filepaths {
+		_, name := filepath.Split(param)
+		if filename == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 func copyFileIntoDir(srcPath, destDirPath string) {
