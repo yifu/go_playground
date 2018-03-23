@@ -166,6 +166,7 @@ func copyFiles(dstDir string, srcList ...string) []error {
 }
 
 func findFilename(filepaths []string, filename string) bool {
+	_, filename = filepath.Split(filename)
 	for _, param := range filepaths {
 		_, name := filepath.Split(param)
 		if filename == name {
@@ -174,14 +175,6 @@ func findFilename(filepaths []string, filename string) bool {
 	}
 
 	return false
-}
-
-// TODO Remove this useless function.
-func copyFileIntoDir(srcPath, destDirPath string) {
-	_, srcFileName := filepath.Split(srcPath)
-	dstFilePath := filepath.Join(destDirPath, srcFileName)
-
-	copyFileIntoFile(srcPath, dstFilePath)
 }
 
 // TODO Replace those structs with fmt.Errorf(fmt, "")
