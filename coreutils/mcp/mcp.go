@@ -92,7 +92,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	srcList := os.Args[1 : len(os.Args)-1]
+	copyFiles(destDir, os.Args[1:len(os.Args)-1]...)
+}
+
+func copyFiles(destDir string, srcList ...string) {
 	for i, param := range srcList {
 		fileInfo, err := os.Stat(param)
 		if err != nil {
@@ -120,6 +123,7 @@ func main() {
 
 		copyFileIntoDir(param, destDir)
 	}
+
 }
 
 func isDir(destDir string) bool {
