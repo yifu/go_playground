@@ -36,7 +36,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	errorList := copyFiles(dstDir, os.Args[1:len(os.Args)-1]...)
+	errorList := copyFiles(dstDir, paramList...)
 	for _, err := range errorList {
 		fmt.Println(err.Error())
 	}
