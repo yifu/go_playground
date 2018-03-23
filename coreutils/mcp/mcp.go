@@ -9,13 +9,7 @@ import (
 )
 
 func main() {
-	flag.Usage = func() {
-		fmt.Print("Usage: ", os.Args[0], " sourcefile destdir/\n")
-		fmt.Print("Usage: ", os.Args[0], " sourcefile1 sourcefile2 ... destdir\n")
-		fmt.Print("Usage: ", os.Args[0], " sourcefile destfile>\n")
-		flag.PrintDefaults()
-	}
-
+	changeUsage()
 	checkArgsCount()
 
 	target := os.Args[len(os.Args)-1]
@@ -109,6 +103,15 @@ func copyFileIntoFile(srcPath, dstPath string) {
 	if _, err := io.Copy(dst, src); err != nil {
 		printErr(err)
 		os.Exit(2)
+	}
+}
+
+func changeUsage() {
+	flag.Usage = func() {
+		fmt.Print("Usage: ", os.Args[0], " sourcefile destdir/\n")
+		fmt.Print("Usage: ", os.Args[0], " sourcefile1 sourcefile2 ... destdir\n")
+		fmt.Print("Usage: ", os.Args[0], " sourcefile destfile>\n")
+		flag.PrintDefaults()
 	}
 }
 
