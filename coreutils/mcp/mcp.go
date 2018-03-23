@@ -18,8 +18,13 @@ import (
 // 4- mcp file2 file2 ../dir
 // 5- mcp file1 file2 /tmp/dir
 // 6- mcp file1 file2 .//.././../dir
-// 7- mcp -r /a /b when b already exists
+// 7a- mcp -r /a /b when b does not already exists
+// 7b- mcp -r /a /b when b already exists
 // Every time: check the resulting mode for every new file/dir.
+
+// TODO Next steps: implement -r option.
+
+// TODO Replace those structs with fmt.Errorf(fmt, "")
 
 type OmittingDirErr struct {
 	dirName string
@@ -47,7 +52,7 @@ func (err NoSuchFileOrDirErr) Error() string {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Print("Usage: ", os.Args[0], " sourcefile destdi/\n")
+		fmt.Print("Usage: ", os.Args[0], " sourcefile destdir/\n")
 		fmt.Print("Usage: ", os.Args[0], " sourcefile1 sourcefile2 ... destdir\n")
 		fmt.Print("Usage: ", os.Args[0], " sourcefile destfile>\n")
 		flag.PrintDefaults()
@@ -108,7 +113,6 @@ func main() {
 
 		_, filename := filepath.Split(param)
 		if findFilename(srcList[:i], filename) {
-			// TODO complete with the already copied filename
 			// TODO We must exit with status code 1 in the end, but still process the rest of the params.
 			fmt.Printf("%v will not overwrite '' with %q\n", os.Args[0], filename)
 			continue
