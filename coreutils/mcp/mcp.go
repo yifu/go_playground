@@ -151,13 +151,12 @@ func copyFiles(dstDir string, srcList ...string) []error {
 	for i, param := range srcList {
 		fileInfo, err := os.Stat(param)
 		if err != nil {
-			if os.IsNotExist(err) {
-				errorList = append(errorList, NoSuchFileOrDirErr{paramName: param})
-				continue
-			} else {
+			if !os.IsNotExist(err) {
 				printErr(err)
 				os.Exit(2)
 			}
+			errorList = append(errorList, NoSuchFileOrDirErr{paramName: param})
+			continue
 		}
 
 		if fileInfo.IsDir() {
