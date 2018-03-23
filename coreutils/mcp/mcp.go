@@ -16,11 +16,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	paramCount := len(os.Args[1:])
-	if paramCount < 2 {
-		flag.Usage()
-		os.Exit(1)
-	}
+	checkArgsCount()
 
 	target := os.Args[len(os.Args)-1]
 	paramList := os.Args[1 : len(os.Args)-1]
@@ -160,6 +156,14 @@ func copyFileIntoDir(srcPath, destDirPath string) {
 	dstFilePath := filepath.Join(destDirPath, srcFileName)
 
 	copyFileIntoFile(srcPath, dstFilePath)
+}
+
+func checkArgsCount() {
+	paramCount := len(os.Args[1:])
+	if paramCount < 2 {
+		flag.Usage()
+		os.Exit(1)
+	}
 }
 
 func isNotExist(file string) bool {
