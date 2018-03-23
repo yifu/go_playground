@@ -171,7 +171,8 @@ func copyFiles(dstDir string, srcList ...string) []error {
 			continue
 		}
 
-		copyFileIntoDir(param, dstDir)
+		target := filepath.Join(dstDir, param)
+		copyFileIntoFile(param, target)
 	}
 	return errorList
 }
