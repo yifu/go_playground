@@ -8,56 +8,6 @@ import (
 	"path/filepath"
 )
 
-// TESTS:
-// 1a- mcp file1 file2 (file2 does not exist)
-// 1b- mcp file1 file2 (file2 already exist)
-// 1c- mcp file1 file1 (does nothing, check with mtime)
-// 1d- mcp file1 file2 *then* mcp -f file1 file2 (with file2 being beforehand chmod to be not openable. So mcp must unlink() file2)
-// 2- mcp file1 ./file2 somewhere/file3 ../file4 ..///../file5 /tmp/file6 dir
-// 3- mcp file1 file2 ./dir
-// 4- mcp file2 file2 ../dir
-// 5- mcp file1 file2 /tmp/dir
-// 6- mcp file1 file2 .//.././../dir
-// 7a- mcp -r /a /b when b does not already exists
-// 7b- mcp -r /a /b when b already exists
-// Every time: check the resulting mode for every new file/dir.
-
-// TODO Next steps: implement -r option.
-
-// TODO Replace those structs with fmt.Errorf(fmt, "")
-
-type OmittingDirErr struct {
-	dirName string
-}
-
-func (err OmittingDirErr) Error() string {
-	return fmt.Sprintf("Omitting directory %q", err.dirName)
-}
-
-type NotADirErr struct {
-	paramName string
-}
-
-func (err NotADirErr) Error() string {
-	return fmt.Sprintf("Target %q is not a directory", err.paramName)
-}
-
-type NoSuchFileOrDirErr struct {
-	paramName string
-}
-
-func (err NoSuchFileOrDirErr) Error() string {
-	return fmt.Sprintf("%q No such file or directory", err.paramName)
-}
-
-type WillNotOverwriteErr struct {
-	paramName, alreadyCopied string
-}
-
-func (err WillNotOverwriteErr) Error() string {
-	return fmt.Sprintf("Will not overwrite %q with %q\n", err.alreadyCopied, err.paramName)
-}
-
 func main() {
 	flag.Usage = func() {
 		fmt.Print("Usage: ", os.Args[0], " sourcefile destdir/\n")
@@ -93,6 +43,9 @@ func main() {
 		copyFileIntoFile(srcName, dstName)
 		os.Exit(0)
 	}
+
+	// TODO We must check the last parameter is a dir. If so there no discussion, every other parameters must be copied into it.
+	// Else, (when the last param is not a dir) it may be not a valid file, or a valid existing file: in the former we create a new file (thus copyIntoDir does the job with copyInfoDir basepath(target)), and in the second case we open it as a destination (copyFileIntoDir cannot work as is, since the copy implies a renaming of the file).
 
 	destDir := os.Args[len(os.Args)-1]
 	if !isDir(destDir) {
@@ -225,3 +178,53 @@ func copyFileIntoDir(srcPath, destDirPath string) {
 
 	copyFileIntoFile(srcPath, dstFilePath)
 }
+
+// TODO Replace those structs with fmt.Errorf(fmt, "")
+
+type OmittingDirErr struct {
+	dirName string
+}
+
+func (err OmittingDirErr) Error() string {
+	return fmt.Sprintf("Omitting directory %q", err.dirName)
+}
+
+type NotADirErr struct {
+	paramName string
+}
+
+func (err NotADirErr) Error() string {
+	return fmt.Sprintf("Target %q is not a directory", err.paramName)
+}
+
+type NoSuchFileOrDirErr struct {
+	paramName string
+}
+
+func (err NoSuchFileOrDirErr) Error() string {
+	return fmt.Sprintf("%q No such file or directory", err.paramName)
+}
+
+type WillNotOverwriteErr struct {
+	paramName, alreadyCopied string
+}
+
+func (err WillNotOverwriteErr) Error() string {
+	return fmt.Sprintf("Will not overwrite %q with %q\n", err.alreadyCopied, err.paramName)
+}
+
+// TESTS:
+// 1a- mcp file1 file2 (file2 does not exist)
+// 1b- mcp file1 file2 (file2 already exist)
+// 1c- mcp file1 file1 (does nothing, check with mtime)
+// 1d- mcp file1 file2 *then* mcp -f file1 file2 (with file2 being beforehand chmod to be not openable. So mcp must unlink() file2)
+// 2- mcp file1 ./file2 somewhere/file3 ../file4 ..///../file5 /tmp/file6 dir
+// 3- mcp file1 file2 ./dir
+// 4- mcp file2 file2 ../dir
+// 5- mcp file1 file2 /tmp/dir
+// 6- mcp file1 file2 .//.././../dir
+// 7a- mcp -r /a /b when b does not already exists
+// 7b- mcp -r /a /b when b already exists
+// Every time: check the resulting mode for every new file/dir.
+
+// TODO Next steps: implement -r option.
