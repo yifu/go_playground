@@ -153,13 +153,13 @@ func copyFiles(dstDir string, srcList ...string) []error {
 			continue
 		}
 
-		_, filename := filepath.Split(param)
-		if findFilename(srcList[:i], filename) {
-			errorList = append(errorList, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(dstDir, filename)})
+		_, fileName := filepath.Split(param)
+		if findFilename(srcList[:i], fileName) {
+			errorList = append(errorList, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(dstDir, fileName)})
 			continue
 		}
 
-		target := filepath.Join(dstDir, param)
+		target := filepath.Join(dstDir, fileName)
 		copyFileIntoFile(param, target)
 	}
 	return errorList
@@ -176,6 +176,7 @@ func findFilename(filepaths []string, filename string) bool {
 	return false
 }
 
+// TODO Remove this useless function.
 func copyFileIntoDir(srcPath, destDirPath string) {
 	_, srcFileName := filepath.Split(srcPath)
 	dstFilePath := filepath.Join(destDirPath, srcFileName)
