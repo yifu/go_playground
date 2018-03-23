@@ -26,11 +26,12 @@ func main() {
 		os.Exit(exitCode)
 	}
 
-	dstDir := target
-	if !isDir(dstDir) {
-		printErr(NotADirErr{dstDir})
+	if !isDir(target) {
+		printErr(NotADirErr{target})
 		os.Exit(1)
 	}
+
+	dstDir := target
 
 	errorList := copyFiles(dstDir, paramList...)
 
