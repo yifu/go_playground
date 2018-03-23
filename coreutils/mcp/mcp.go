@@ -173,7 +173,6 @@ func processNonExistingTarget(target string, paramList []string) int {
 		copyFileIntoFile(srcFileName, destFileName)
 		return 0
 	} else {
-		// assert(ParamCount > 2)
 		printErr(NotADirErr{paramName: target})
 		return 1
 	}
