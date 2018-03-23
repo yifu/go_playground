@@ -30,13 +30,13 @@ func main() {
 		os.Exit(exitCode)
 	}
 
-	destDir := os.Args[len(os.Args)-1]
-	if !isDir(destDir) {
-		printErr(NotADirErr{paramName: destDir})
+	dstDir := target
+	if !isDir(dstDir) {
+		printErr(NotADirErr{dstDir})
 		os.Exit(1)
 	}
 
-	errorList := copyFiles(destDir, os.Args[1:len(os.Args)-1]...)
+	errorList := copyFiles(dstDir, os.Args[1:len(os.Args)-1]...)
 	for _, err := range errorList {
 		fmt.Println(err.Error())
 	}
