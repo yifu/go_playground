@@ -135,8 +135,19 @@ func processNonExistingTarget(target string, paramList []string) int {
 	}
 }
 
-func copyFiles(dstDir string, srcList ...string) []error {
-	errorList := make([]error, 0)
+func copyFiles(dstDir string, srcList ...string) (errors []error) {
+	srcList, errors = filterSrcList(dstDir, srcList)
+
+	for _, param := range srcList {
+		_, fileName := filepath.Split(param)
+		target := filepath.Join(dstDir, fileName)
+		copyFileIntoFile(param, target)
+	}
+
+	return
+}
+
+func filterSrcList(dstDir string, srcList []string) (oks []string, errors []error) {
 	for i, param := range srcList {
 		fileInfo, err := os.Stat(param)
 		if err != nil {
@@ -144,25 +155,24 @@ func copyFiles(dstDir string, srcList ...string) []error {
 				printErr(err)
 				os.Exit(2)
 			}
-			errorList = append(errorList, NoSuchFileOrDirErr{paramName: param})
+			errors = append(errors, NoSuchFileOrDirErr{paramName: param})
 			continue
 		}
 
 		if fileInfo.IsDir() {
-			errorList = append(errorList, OmittingDirErr{dirName: param})
+			errors = append(errors, OmittingDirErr{dirName: param})
 			continue
 		}
 
 		_, fileName := filepath.Split(param)
 		if findFilename(srcList[:i], fileName) {
-			errorList = append(errorList, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(dstDir, fileName)})
+			errors = append(errors, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(dstDir, fileName)})
 			continue
 		}
 
-		target := filepath.Join(dstDir, fileName)
-		copyFileIntoFile(param, target)
+		oks = append(oks, param)
 	}
-	return errorList
+	return
 }
 
 func findFilename(filepaths []string, filename string) bool {
