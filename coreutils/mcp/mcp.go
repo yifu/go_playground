@@ -16,14 +16,14 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	paramCount := len(os.Args) - 1
+	paramCount := len(os.Args[1:])
 	if paramCount < 2 {
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	paramList := os.Args[1 : len(os.Args)-1]
 	target := os.Args[len(os.Args)-1]
+	paramList := os.Args[1 : len(os.Args)-1]
 
 	if isNotExist(target) {
 		exitCode := processNonExistingTarget(target, paramList)
