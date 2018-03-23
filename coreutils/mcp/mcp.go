@@ -222,7 +222,7 @@ type WillNotOverwriteErr struct {
 }
 
 func (err WillNotOverwriteErr) Error() string {
-	return fmt.Sprintf("Will not overwrite %q with %q\n", err.alreadyCopied, err.paramName)
+	return fmt.Sprintf("Will not overwrite %q with %q", err.alreadyCopied, err.paramName)
 }
 
 // TESTS:
