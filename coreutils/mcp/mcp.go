@@ -26,7 +26,8 @@ func main() {
 	target := os.Args[len(os.Args)-1]
 
 	if isNotExist(target) {
-		processNonExistingTarget(target, paramList)
+		exitCode := processNonExistingTarget(target, paramList)
+		os.Exit(exitCode)
 	}
 
 	destDir := os.Args[len(os.Args)-1]
@@ -166,17 +167,16 @@ func isNotExist(file string) bool {
 	return os.IsNotExist(err)
 }
 
-func processNonExistingTarget(target string, paramList []string) {
+func processNonExistingTarget(target string, paramList []string) int {
 	if len(paramList) == 1 {
 		srcFileName, destFileName := paramList[0], target
 		copyFileIntoFile(srcFileName, destFileName)
-		os.Exit(0)
+		return 0
 	} else {
 		// assert(ParamCount > 2)
 		printErr(NotADirErr{paramName: target})
-		os.Exit(1)
+		return 1
 	}
-
 }
 
 // TODO Replace those structs with fmt.Errorf(fmt, "")
