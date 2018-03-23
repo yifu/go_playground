@@ -17,35 +17,25 @@ func main() {
 	}
 
 	paramCount := len(os.Args) - 1
-
 	if paramCount < 2 {
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	if paramCount == 2 {
-		srcName, dstName := os.Args[1], os.Args[2]
-		srcInfo, err := os.Stat(srcName)
-		if err != nil {
-			if os.IsNotExist(err) {
-				printErr(NoSuchFileOrDirErr{paramName: srcName})
-				os.Exit(1)
-			} else {
-				printErr(err)
-				os.Exit(2)
-			}
-		}
-		if srcInfo.IsDir() {
-			printErr(OmittingDirErr{dirName: srcName})
+	paramList := os.Args[1 : len(os.Args)-1]
+	target := os.Args[len(os.Args)-1]
+
+	if isNotExist(target) {
+		if paramCount == 2 {
+			srcFileName, destFileName := paramList[0], target
+			copyFileIntoFile(srcFileName, destFileName)
+			os.Exit(0)
+		} else {
+			// assert(ParamCount > 2)
+			printErr(NotADirErr{paramName: target})
 			os.Exit(1)
 		}
-		// TODO When the second parameter is a dir, it must work.
-		copyFileIntoFile(srcName, dstName)
-		os.Exit(0)
 	}
-
-	// TODO We must check the last parameter is a dir. If so there no discussion, every other parameters must be copied into it.
-	// Else, (when the last param is not a dir) it may be not a valid file, or a valid existing file: in the former we create a new file (thus copyIntoDir does the job with copyInfoDir basepath(target)), and in the second case we open it as a destination (copyFileIntoDir cannot work as is, since the copy implies a renaming of the file).
 
 	destDir := os.Args[len(os.Args)-1]
 	if !isDir(destDir) {
@@ -177,6 +167,11 @@ func copyFileIntoDir(srcPath, destDirPath string) {
 	dstFilePath := filepath.Join(destDirPath, srcFileName)
 
 	copyFileIntoFile(srcPath, dstFilePath)
+}
+
+func isNotExist(file string) bool {
+	_, err := os.Stat(file)
+	return os.IsNotExist(err)
 }
 
 // TODO Replace those structs with fmt.Errorf(fmt, "")
