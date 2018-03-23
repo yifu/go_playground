@@ -146,7 +146,7 @@ func processNonExistingTarget(target string, paramList []string) int {
 	}
 }
 
-func copyFiles(destDir string, srcList ...string) []error {
+func copyFiles(dstDir string, srcList ...string) []error {
 	errorList := make([]error, 0)
 	for i, param := range srcList {
 		fileInfo, err := os.Stat(param)
@@ -167,11 +167,11 @@ func copyFiles(destDir string, srcList ...string) []error {
 
 		_, filename := filepath.Split(param)
 		if findFilename(srcList[:i], filename) {
-			errorList = append(errorList, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(destDir, filename)})
+			errorList = append(errorList, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(dstDir, filename)})
 			continue
 		}
 
-		copyFileIntoDir(param, destDir)
+		copyFileIntoDir(param, dstDir)
 	}
 	return errorList
 }
