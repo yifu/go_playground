@@ -28,7 +28,7 @@ func cmdLine() (string, []string) {
 }
 
 func isCopyingOneFile(dst string, srcs []string) bool {
-	return isNotExist(dst) && len(srcs) == 1
+	return len(srcs) == 1 && isNotExist(dst)
 }
 
 func processCopyingMultipleFiles(dst string, srcs []string) {
@@ -87,34 +87,29 @@ func openSrc(src string) (srcf *os.File, srcfi os.FileInfo) {
 }
 
 func copyFileIntoFile(srcPath, dstPath string) {
-	src, srcStat := openSrc(srcPath)
+	if sameFile(srcPath, dstPath) {
+		return
+	}
+
+	src, err := os.OpenFile(srcPath, os.O_RDONLY, 0)
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
 	defer src.Close()
 
-	var dst *os.File
-	dstStat, err := os.Stat(dstPath)
+	srcStat, err := src.Stat()
 	if err != nil {
-		if os.IsNotExist(err) {
-			dst, err = os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE, srcStat.Mode().Perm())
-			if err != nil {
-				printErr(err)
-				os.Exit(2)
-			}
-			defer dst.Close()
-		} else {
-			printErr(err)
-			os.Exit(2)
-		}
-	} else {
-		if os.SameFile(srcStat, dstStat) {
-			os.Exit(0)
-		}
-
-		dst, err = os.OpenFile(dstPath, os.O_WRONLY|os.O_TRUNC, 0 /*perm is useless when O_CREATE is not specified*/)
-		if err != nil {
-			printErr(err)
-			os.Exit(2)
-		}
+		printErr(err)
+		os.Exit(2)
 	}
+
+	dst, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcStat.Mode().Perm())
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+	defer dst.Close()
 
 	if _, err := io.Copy(dst, src); err != nil {
 		printErr(err)
@@ -142,6 +137,28 @@ func checkArgsCount() {
 func isNotExist(file string) bool {
 	_, err := os.Stat(file)
 	return os.IsNotExist(err)
+}
+
+func sameFile(a, b string) bool {
+	afi, err := os.Stat(a)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+		printErr(err)
+		os.Exit(2)
+	}
+
+	bfi, err := os.Stat(b)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+		printErr(err)
+		os.Exit(2)
+	}
+
+	return os.SameFile(afi, bfi)
 }
 
 func copyFiles(dstDir string, srcList ...string) (errors []error) {
