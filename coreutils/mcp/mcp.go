@@ -16,7 +16,7 @@ func main() {
 	if isCopyingOneFile(dst, srcs) {
 		copyFileIntoFile(srcs[0], dst)
 	} else {
-		processCopyingMultipleFiles()
+		processCopyingMultipleFiles(dst, srcs)
 	}
 	os.Exit(0)
 }
@@ -31,22 +31,19 @@ func isCopyingOneFile(dst string, srcs []string) bool {
 	return isNotExist(dst) && len(srcs) == 1
 }
 
-func processCopyingMultipleFiles() {
-	dst := os.Args[len(os.Args)-1]
-	paramList := os.Args[1 : len(os.Args)-1]
-
+func processCopyingMultipleFiles(dst string, srcs []string) {
 	if !isDir(dst) {
 		printErr(NotADirErr{dst})
 		os.Exit(1)
 	}
 
-	errorList := copyFiles(dst, paramList...)
+	errs := copyFiles(dst, srcs...)
 
-	for _, err := range errorList {
+	for _, err := range errs {
 		fmt.Println(err.Error())
 	}
 
-	if len(errorList) > 0 {
+	if len(errs) > 0 {
 		os.Exit(1)
 	} else {
 		os.Exit(0)
