@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	changeUsage()
+	setUsage()
 	checkArgsCount()
 
 	target := os.Args[len(os.Args)-1]
@@ -110,7 +110,7 @@ func copyFileIntoFile(srcPath, dstPath string) {
 	}
 }
 
-func changeUsage() {
+func setUsage() {
 	flag.Usage = func() {
 		fmt.Print("Usage: ", os.Args[0], " sourcefile destdir/\n")
 		fmt.Print("Usage: ", os.Args[0], " sourcefile1 sourcefile2 ... destdir\n")
