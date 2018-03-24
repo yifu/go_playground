@@ -33,7 +33,14 @@ func processCopyingMultipleFiles(dst string, srcs []string) {
 		os.Exit(1)
 	}
 
-	errs := copyFiles(dst, srcs...)
+	var errs []error
+	srcs, errs = filterSrcList(dst, srcs)
+
+	for _, src := range srcs {
+		_, fileName := filepath.Split(src)
+		target := filepath.Join(dst, fileName)
+		copyFileIntoFile(src, target)
+	}
 
 	for _, err := range errs {
 		fmt.Println(err.Error())
@@ -155,18 +162,6 @@ func sameFile(a, b string) bool {
 	}
 
 	return os.SameFile(afi, bfi)
-}
-
-func copyFiles(dstDir string, srcList ...string) (errors []error) {
-	srcList, errors = filterSrcList(dstDir, srcList)
-
-	for _, param := range srcList {
-		_, fileName := filepath.Split(param)
-		target := filepath.Join(dstDir, fileName)
-		copyFileIntoFile(param, target)
-	}
-
-	return
 }
 
 func filterSrcList(dstDir string, srcList []string) (oks []string, errors []error) {
