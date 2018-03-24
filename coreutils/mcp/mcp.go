@@ -44,8 +44,8 @@ func processCopyingMultipleFiles() {
 	}
 }
 
-func isDir(destDir string) bool {
-	dstInfo, err := os.Open(destDir)
+func isDir(dst string) bool {
+	dstInfo, err := os.Open(dst)
 	if err != nil {
 		printErr(err)
 		os.Exit(2)
