@@ -8,87 +8,61 @@ import (
 	"path/filepath"
 )
 
+// TODO implémenter cp -r
+// TODO implémenter cp -f
+
 func main() {
 	setUsage()
 	checkArgsCount()
 
-	dst, srcs := cmdLine()
-	if len(srcs) == 1 {
-		copyFileIntoFile(srcs[0], dst)
+	dst, srcs := parseCmdLine()
+	if isDstDir := isDir(dst); len(srcs) > 1 && !isDstDir {
+		printErr(NotADirErr{dst})
+		os.Exit(1)
 	} else {
-		processCopyingMultipleFiles(dst, srcs)
+		var errs []error
+		srcs, errs = filterSrcList(dst, srcs)
+
+		for _, src := range srcs {
+			if isDstDir {
+				_, fileName := filepath.Split(src)
+				target := filepath.Join(dst, fileName)
+				copyFileIntoFile(src, target)
+			} else {
+				copyFileIntoFile(src, dst)
+			}
+		}
+
+		for _, err := range errs {
+			fmt.Println(err.Error())
+		}
+
+		if len(errs) > 0 {
+			os.Exit(1)
+		}
 	}
 	os.Exit(0)
 }
 
-func cmdLine() (string, []string) {
+func parseCmdLine() (string, []string) {
 	dst := os.Args[len(os.Args)-1]
 	srcs := os.Args[1 : len(os.Args)-1]
 	return dst, srcs
 }
 
-func processCopyingMultipleFiles(dst string, srcs []string) {
-	if !isDir(dst) {
-		printErr(NotADirErr{dst})
-		os.Exit(1)
-	}
-
-	var errs []error
-	srcs, errs = filterSrcList(dst, srcs)
-
-	for _, src := range srcs {
-		_, fileName := filepath.Split(src)
-		target := filepath.Join(dst, fileName)
-		copyFileIntoFile(src, target)
-	}
-
-	for _, err := range errs {
-		fmt.Println(err.Error())
-	}
-
-	if len(errs) > 0 {
-		os.Exit(1)
+func isDir(f string) bool {
+	if fi, err := os.Stat(f); err != nil {
+		return false
 	} else {
-		os.Exit(0)
+		return fi.IsDir()
 	}
-}
-
-func isDir(dst string) bool {
-	dstInfo, err := os.Open(dst)
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-
-	dstStat, err := dstInfo.Stat()
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-
-	return dstStat.IsDir()
 }
 
 func printErr(e error) {
 	fmt.Print(os.Args[0], ": ", e.Error(), "\n")
 }
 
-func openSrc(src string) (srcf *os.File, srcfi os.FileInfo) {
-	var err error
-	srcf, err = os.Open(src)
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-
-	srcfi, err = srcf.Stat()
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-	return
-}
-
+// TODO Rename to copy(dst, src string)
 func copyFileIntoFile(srcPath, dstPath string) {
 	if sameFile(srcPath, dstPath) {
 		return
@@ -164,6 +138,9 @@ func sameFile(a, b string) bool {
 	return os.SameFile(afi, bfi)
 }
 
+// TODO rename to dst, srcs. and errs.
+// TODO FIXME We must apply filtering in stages. Because a file may be bad (i.e. no such file or dir) but then empeach a later file with the same name but valid. For isntance:
+// mcp file1#nosuchfile# tests/file1#PerfectlyValidButStillSkipedBecauseOfThePreviousFile1 dest/
 func filterSrcList(dstDir string, srcList []string) (oks []string, errors []error) {
 	for i, param := range srcList {
 		fileInfo, err := os.Stat(param)
@@ -192,6 +169,7 @@ func filterSrcList(dstDir string, srcList []string) (oks []string, errors []erro
 	return
 }
 
+// TODO Rename to find().
 func findFilename(filepaths []string, filename string) bool {
 	_, filename = filepath.Split(filename)
 	for _, param := range filepaths {
