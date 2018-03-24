@@ -13,7 +13,7 @@ func main() {
 	checkArgsCount()
 
 	dst, srcs := cmdLine()
-	if isCopyingOneFile(dst, srcs) {
+	if len(srcs) == 1 {
 		copyFileIntoFile(srcs[0], dst)
 	} else {
 		processCopyingMultipleFiles(dst, srcs)
@@ -25,10 +25,6 @@ func cmdLine() (string, []string) {
 	dst := os.Args[len(os.Args)-1]
 	srcs := os.Args[1 : len(os.Args)-1]
 	return dst, srcs
-}
-
-func isCopyingOneFile(dst string, srcs []string) bool {
-	return len(srcs) == 1 && isNotExist(dst)
 }
 
 func processCopyingMultipleFiles(dst string, srcs []string) {
