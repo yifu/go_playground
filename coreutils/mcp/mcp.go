@@ -70,19 +70,25 @@ func printErr(e error) {
 	fmt.Print(os.Args[0], ": ", e.Error(), "\n")
 }
 
-func copyFileIntoFile(srcPath, dstPath string) {
-	src, err := os.Open(srcPath)
+func openSrc(src string) (srcf *os.File, srcfi os.FileInfo) {
+	var err error
+	srcf, err = os.Open(src)
 	if err != nil {
 		printErr(err)
 		os.Exit(2)
 	}
-	defer src.Close()
 
-	srcStat, err := src.Stat()
+	srcfi, err = srcf.Stat()
 	if err != nil {
 		printErr(err)
 		os.Exit(2)
 	}
+	return
+}
+
+func copyFileIntoFile(srcPath, dstPath string) {
+	src, srcStat := openSrc(srcPath)
+	defer src.Close()
 
 	var dst *os.File
 	dstStat, err := os.Stat(dstPath)
