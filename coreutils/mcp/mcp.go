@@ -13,21 +13,25 @@ func main() {
 	checkArgsCount()
 
 	target := os.Args[len(os.Args)-1]
-	paramList := os.Args[1 : len(os.Args)-1]
-
-	if isNotExist(target) {
-		exitCode := processNonExistingTarget(target, paramList)
-		os.Exit(exitCode)
+	if isCopyingOneFile(target) {
+		dst, src := target, os.Args[1]
+		copyFileIntoFile(src, dst)
+		os.Exit(0)
 	}
 
-	if !isDir(target) {
-		printErr(NotADirErr{target})
+	processCopyingMultipleFiles()
+}
+
+func processCopyingMultipleFiles() {
+	dst := os.Args[len(os.Args)-1]
+	paramList := os.Args[1 : len(os.Args)-1]
+
+	if !isDir(dst) {
+		printErr(NotADirErr{dst})
 		os.Exit(1)
 	}
 
-	dstDir := target
-
-	errorList := copyFiles(dstDir, paramList...)
+	errorList := copyFiles(dst, paramList...)
 
 	for _, err := range errorList {
 		fmt.Println(err.Error())
@@ -123,20 +127,13 @@ func checkArgsCount() {
 	}
 }
 
+func isCopyingOneFile(target string) bool {
+	return isNotExist(target) && len(os.Args) == 3
+}
+
 func isNotExist(file string) bool {
 	_, err := os.Stat(file)
 	return os.IsNotExist(err)
-}
-
-func processNonExistingTarget(target string, paramList []string) int {
-	if len(paramList) == 1 {
-		srcFileName, destFileName := paramList[0], target
-		copyFileIntoFile(srcFileName, destFileName)
-		return 0
-	} else {
-		printErr(NotADirErr{paramName: target})
-		return 1
-	}
 }
 
 func copyFiles(dstDir string, srcList ...string) (errors []error) {
