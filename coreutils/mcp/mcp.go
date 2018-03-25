@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 )
 
+// TODO Implement a test suite of some sort.
 // TODO implémenter cp -r
 // TODO implémenter cp -f
 
