@@ -142,7 +142,7 @@ func sameFile(a, b string) bool {
 // TODO FIXME We must apply filtering in stages. Because a file may be bad (i.e. no such file or dir) but then empeach a later file with the same name but valid. For isntance:
 // mcp file1#nosuchfile# tests/file1#PerfectlyValidButStillSkipedBecauseOfThePreviousFile1 dest/
 func filterSrcList(dstDir string, srcList []string) (oks []string, errors []error) {
-	for i, param := range srcList {
+	for _, param := range srcList {
 		fileInfo, err := os.Stat(param)
 		if err != nil {
 			if !os.IsNotExist(err) {
@@ -159,7 +159,7 @@ func filterSrcList(dstDir string, srcList []string) (oks []string, errors []erro
 		}
 
 		_, fileName := filepath.Split(param)
-		if findFilename(srcList[:i], fileName) {
+		if findFilename(oks, fileName) {
 			errors = append(errors, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(dstDir, fileName)})
 			continue
 		}
