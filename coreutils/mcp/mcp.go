@@ -159,7 +159,7 @@ func filterSrcList(dstDir string, srcList []string) (oks []string, errors []erro
 		}
 
 		_, fileName := filepath.Split(param)
-		if findFilename(oks, fileName) {
+		if oks.contains(fileName) {
 			errors = append(errors, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(dstDir, fileName)})
 			continue
 		}
@@ -169,16 +169,16 @@ func filterSrcList(dstDir string, srcList []string) (oks []string, errors []erro
 	return
 }
 
-// TODO Rename to find().
-func findFilename(filepaths []string, filename string) bool {
-	_, filename = filepath.Split(filename)
-	for _, param := range filepaths {
-		_, name := filepath.Split(param)
-		if filename == name {
+type pathList []string
+
+func (paths pathList) contains(path string) bool {
+	_, fn := filepath.Split(path)
+	for _, p := range paths {
+		_, n := filepath.Split(p)
+		if fn == n {
 			return true
 		}
 	}
-
 	return false
 }
 
