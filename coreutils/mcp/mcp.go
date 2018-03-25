@@ -11,6 +11,7 @@ import (
 // TODO Implement a test suite of some sort.
 // TODO implémenter cp -r
 // TODO implémenter cp -f
+// TODO Implémenter un type spécial: path. Faire remonter ces définition en haut du fichier.
 
 func main() {
 	setUsage()
@@ -25,13 +26,8 @@ func main() {
 		srcs, errs = filterSrcList(dst, srcs)
 
 		for _, src := range srcs {
-			if isDstDir {
-				_, fileName := filepath.Split(src)
-				target := filepath.Join(dst, fileName)
-				cp(src, target)
-			} else {
-				cp(src, dst)
-			}
+			target := mkTargetPath(dst, src, isDstDir)
+			cp(src, target)
 		}
 
 		for _, err := range errs {
@@ -56,6 +52,15 @@ func isDir(f string) bool {
 		return false
 	} else {
 		return fi.IsDir()
+	}
+}
+
+func mkTargetPath(dst, src string, isDstDir bool) string {
+	if isDstDir {
+		_, fn := filepath.Split(src)
+		return filepath.Join(dst, fn)
+	} else {
+		return dst
 	}
 }
 
