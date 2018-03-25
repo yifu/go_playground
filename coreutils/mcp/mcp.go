@@ -141,16 +141,19 @@ func sameFile(a, b string) bool {
 // TODO rename to dst, srcs. and errs.
 // TODO FIXME We must apply filtering in stages. Because a file may be bad (i.e. no such file or dir) but then empeach a later file with the same name but valid. For isntance:
 // mcp file1#nosuchfile# tests/file1#PerfectlyValidButStillSkipedBecauseOfThePreviousFile1 dest/
-func filterSrcList(dstDir string, srcList []string) (oks []string, errors []error) {
+// TODO Peut être en faire trois fonctions: removeNoSuchFileOrDir() removeOmittingDir() et removeWillNotOverwrite() ?
+// TODO: non, je pense que le fix est tout simple: il faut appeler findFilename(oks, filename) à la place de findFilename(srcList[:i], filename)
+func filterSrcList(dstDir string, srcList []string) (oks pathList, errors []error) {
 	for _, param := range srcList {
 		fileInfo, err := os.Stat(param)
 		if err != nil {
-			if !os.IsNotExist(err) {
+			if os.IsNotExist(err) {
+				errors = append(errors, NoSuchFileOrDirErr{paramName: param})
+				continue
+			} else {
 				printErr(err)
 				os.Exit(2)
 			}
-			errors = append(errors, NoSuchFileOrDirErr{paramName: param})
-			continue
 		}
 
 		if fileInfo.IsDir() {
