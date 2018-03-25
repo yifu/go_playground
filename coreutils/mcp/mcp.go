@@ -27,9 +27,9 @@ func main() {
 			if isDstDir {
 				_, fileName := filepath.Split(src)
 				target := filepath.Join(dst, fileName)
-				copyFileIntoFile(src, target)
+				cp(src, target)
 			} else {
-				copyFileIntoFile(src, dst)
+				cp(src, dst)
 			}
 		}
 
@@ -62,8 +62,7 @@ func printErr(e error) {
 	fmt.Print(os.Args[0], ": ", e.Error(), "\n")
 }
 
-// TODO Rename to copy(dst, src string)
-func copyFileIntoFile(srcPath, dstPath string) {
+func cp(srcPath, dstPath string) {
 	if sameFile(srcPath, dstPath) {
 		return
 	}
