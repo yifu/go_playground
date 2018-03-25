@@ -63,32 +63,32 @@ func printErr(e error) {
 	fmt.Print(os.Args[0], ": ", e.Error(), "\n")
 }
 
-func cp(srcPath, dstPath string) {
-	if sameFile(srcPath, dstPath) {
+func cp(src, dst string) {
+	if sameFile(src, dst) {
 		return
 	}
 
-	src, err := os.OpenFile(srcPath, os.O_RDONLY, 0)
+	srcf, err := os.OpenFile(src, os.O_RDONLY, 0)
 	if err != nil {
 		printErr(err)
 		os.Exit(2)
 	}
-	defer src.Close()
+	defer srcf.Close()
 
-	srcStat, err := src.Stat()
+	srcfi, err := srcf.Stat()
 	if err != nil {
 		printErr(err)
 		os.Exit(2)
 	}
 
-	dst, err := os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcStat.Mode().Perm())
+	dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcfi.Mode().Perm())
 	if err != nil {
 		printErr(err)
 		os.Exit(2)
 	}
-	defer dst.Close()
+	defer dstf.Close()
 
-	if _, err := io.Copy(dst, src); err != nil {
+	if _, err := io.Copy(dstf, srcf); err != nil {
 		printErr(err)
 		os.Exit(2)
 	}
