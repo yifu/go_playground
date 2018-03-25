@@ -8,115 +8,114 @@ import (
 	"path/filepath"
 )
 
+// TODO Implement a test suite of some sort.
+// TODO implémenter cp -r
+// TODO implémenter cp -f
+// TODO Implémenter un type spécial: path. Faire remonter ces définition en haut du fichier.
+
 func main() {
 	setUsage()
 	checkArgsCount()
+	exitCode := 0
 
-	dst, srcs := cmdLine()
-	if isCopyingOneFile(dst, srcs) {
-		copyFileIntoFile(srcs[0], dst)
+	dst, srcs := parseCmdLine()
+	if isDstDir := isDir(dst); len(srcs) > 1 && !isDstDir {
+		printErr(NotADirErr{dst})
+		exitCode = 1
 	} else {
-		processCopyingMultipleFiles()
+		oks := make(pathList, 0, len(srcs))
+
+		for _, src := range srcs {
+			target := mkTargetPath(dst, src, isDstDir)
+
+			if oks.contains(target) {
+				printErr(WillNotOverwriteErr{src: src, dst: target})
+				exitCode = 1
+			} else if err := cp(src, target); err != nil {
+				printErr(err)
+				exitCode = 1
+			} else {
+				oks = append(oks, target)
+			}
+		}
 	}
-	os.Exit(0)
+	os.Exit(exitCode)
 }
 
-func cmdLine() (string, []string) {
+func parseCmdLine() (string, pathList) {
 	dst := os.Args[len(os.Args)-1]
 	srcs := os.Args[1 : len(os.Args)-1]
 	return dst, srcs
 }
 
-func isCopyingOneFile(dst string, srcs []string) bool {
-	return isNotExist(dst) && len(srcs) == 1
-}
-
-func processCopyingMultipleFiles() {
-	dst := os.Args[len(os.Args)-1]
-	paramList := os.Args[1 : len(os.Args)-1]
-
-	if !isDir(dst) {
-		printErr(NotADirErr{dst})
-		os.Exit(1)
-	}
-
-	errorList := copyFiles(dst, paramList...)
-
-	for _, err := range errorList {
-		fmt.Println(err.Error())
-	}
-
-	if len(errorList) > 0 {
-		os.Exit(1)
+func isDir(f string) bool {
+	if fi, err := os.Stat(f); err != nil {
+		return false
 	} else {
-		os.Exit(0)
+		return fi.IsDir()
 	}
 }
 
-func isDir(dst string) bool {
-	dstInfo, err := os.Open(dst)
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
+func mkTargetPath(dst, src string, isDstDir bool) string {
+	if isDstDir {
+		_, fn := filepath.Split(src)
+		return filepath.Join(dst, fn)
+	} else {
+		return dst
 	}
-
-	dstStat, err := dstInfo.Stat()
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-
-	return dstStat.IsDir()
 }
 
 func printErr(e error) {
 	fmt.Print(os.Args[0], ": ", e.Error(), "\n")
 }
 
-func copyFileIntoFile(srcPath, dstPath string) {
-	src, err := os.Open(srcPath)
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-	defer src.Close()
+func cp(src, dst string) error {
 
-	srcStat, err := src.Stat()
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-
-	var dst *os.File
-	dstStat, err := os.Stat(dstPath)
+	srcf, err := os.OpenFile(src, os.O_RDONLY, 0)
 	if err != nil {
 		if os.IsNotExist(err) {
-			dst, err = os.OpenFile(dstPath, os.O_WRONLY|os.O_CREATE, srcStat.Mode().Perm())
-			if err != nil {
-				printErr(err)
-				os.Exit(2)
-			}
-			defer dst.Close()
+			return NoSuchFileOrDirErr{src}
 		} else {
 			printErr(err)
 			os.Exit(2)
 		}
-	} else {
-		if os.SameFile(srcStat, dstStat) {
-			os.Exit(0)
-		}
-
-		dst, err = os.OpenFile(dstPath, os.O_WRONLY|os.O_TRUNC, 0 /*perm is useless when O_CREATE is not specified*/)
-		if err != nil {
-			printErr(err)
-			os.Exit(2)
-		}
 	}
+	defer srcf.Close()
 
-	if _, err := io.Copy(dst, src); err != nil {
+	srcfi, err := srcf.Stat()
+	if err != nil {
 		printErr(err)
 		os.Exit(2)
 	}
+
+	if srcfi.IsDir() {
+		return OmittingDirErr{src}
+	}
+
+	srcperm := srcfi.Mode().Perm()
+	dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcperm)
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+	defer dstf.Close()
+
+	dstfi, err := dstf.Stat()
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+
+	if os.SameFile(dstfi, srcfi) {
+		// Nothing to perform. One side-effect: atime is modified. It is acceptable?
+		return nil
+	}
+
+	if _, err := io.Copy(dstf, srcf); err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+	return nil
 }
 
 func setUsage() {
@@ -141,55 +140,14 @@ func isNotExist(file string) bool {
 	return os.IsNotExist(err)
 }
 
-func copyFiles(dstDir string, srcList ...string) (errors []error) {
-	srcList, errors = filterSrcList(dstDir, srcList)
+type pathList []string
 
-	for _, param := range srcList {
-		_, fileName := filepath.Split(param)
-		target := filepath.Join(dstDir, fileName)
-		copyFileIntoFile(param, target)
-	}
-
-	return
-}
-
-func filterSrcList(dstDir string, srcList []string) (oks []string, errors []error) {
-	for i, param := range srcList {
-		fileInfo, err := os.Stat(param)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				printErr(err)
-				os.Exit(2)
-			}
-			errors = append(errors, NoSuchFileOrDirErr{paramName: param})
-			continue
-		}
-
-		if fileInfo.IsDir() {
-			errors = append(errors, OmittingDirErr{dirName: param})
-			continue
-		}
-
-		_, fileName := filepath.Split(param)
-		if findFilename(srcList[:i], fileName) {
-			errors = append(errors, WillNotOverwriteErr{paramName: param, alreadyCopied: filepath.Join(dstDir, fileName)})
-			continue
-		}
-
-		oks = append(oks, param)
-	}
-	return
-}
-
-func findFilename(filepaths []string, filename string) bool {
-	_, filename = filepath.Split(filename)
-	for _, param := range filepaths {
-		_, name := filepath.Split(param)
-		if filename == name {
+func (paths pathList) contains(path string) bool {
+	for _, p := range paths {
+		if p == path {
 			return true
 		}
 	}
-
 	return false
 }
 
@@ -220,11 +178,11 @@ func (err NoSuchFileOrDirErr) Error() string {
 }
 
 type WillNotOverwriteErr struct {
-	paramName, alreadyCopied string
+	src, dst string
 }
 
 func (err WillNotOverwriteErr) Error() string {
-	return fmt.Sprintf("Will not overwrite %q with %q", err.alreadyCopied, err.paramName)
+	return fmt.Sprintf("Will not overwrite %q with %q", err.dst, err.src)
 }
 
 // TESTS:
