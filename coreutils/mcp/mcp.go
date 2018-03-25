@@ -13,32 +13,102 @@ import (
 // TODO implémenter cp -f
 // TODO Implémenter un type spécial: path. Faire remonter ces définition en haut du fichier.
 
+type pathList []string
+
 func main() {
 	setUsage()
 	checkArgsCount()
 	exitCode := 0
 
 	dst, srcs := parseCmdLine()
-	if isDstDir := isDir(dst); len(srcs) > 1 && !isDstDir {
-		printErr(NotADirErr{dst})
-		exitCode = 1
-	} else {
-		oks := make(pathList, 0, len(srcs))
+	oks := make(pathList, 0, len(srcs))
 
-		for _, src := range srcs {
-			target := mkTargetPath(dst, src, isDstDir)
+	for _, src := range srcs {
+		// Open src
 
-			if oks.contains(target) {
-				printErr(WillNotOverwriteErr{src: src, dst: target})
-				exitCode = 1
-			} else if err := cp(src, target); err != nil {
-				printErr(err)
+		if srcf, err := os.OpenFile(src, os.O_RDONLY, 0); err != nil {
+			if os.IsNotExist(err) {
+				printErr(NoSuchFileOrDirErr{src})
 				exitCode = 1
 			} else {
-				oks = append(oks, target)
+				printErr(err)
+				os.Exit(2)
+			}
+		} else {
+
+			if srcfi, err := srcf.Stat(); err != nil {
+				printErr(err)
+				os.Exit(2)
+			} else {
+				if srcfi.IsDir() {
+					printErr(OmittingDirErr{srcfi.Name()})
+					exitCode = 1
+				} else {
+					if len(srcs) == 1 {
+						// Open dst
+						dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcfi.Mode().Perm())
+						if err != nil {
+							printErr(err)
+							os.Exit(2)
+						} else {
+							if dstfi, err := dstf.Stat(); err != nil {
+								printErr(err)
+								os.Exit(2)
+							} else if os.SameFile(dstfi, srcfi) {
+								fmt.Println("same files")
+								// Nothing to do
+							} else if _, err := io.Copy(dstf, srcf); err != nil {
+								printErr(err)
+								os.Exit(2)
+							}
+						}
+					} else {
+						dirfi, err := os.Stat(dst)
+						if err != nil || !dirfi.IsDir() {
+							printErr(NotADirErr{dst})
+							os.Exit(1)
+						} else {
+							_, fn := filepath.Split(src)
+							dst := filepath.Join(dst, fn)
+							if oks.contains(dst) {
+								printErr(WillNotOverwriteErr{src, dst})
+								exitCode = 1
+							} else {
+								dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE, srcfi.Mode().Perm())
+								if err != nil {
+									printErr(err)
+									os.Exit(2)
+								} else {
+
+									if dstfi, err := dstf.Stat(); err != nil {
+										printErr(err)
+										os.Exit(2)
+									} else if os.SameFile(dstfi, srcfi) {
+										fmt.Println("same files")
+										// Nothing to do.
+									} else {
+										if err := dstf.Truncate(0); err != nil {
+											printErr(err)
+											os.Exit(2)
+										} else {
+											if _, err := io.Copy(dstf, srcf); err != nil {
+												printErr(err)
+												os.Exit(2)
+											} else {
+												oks = append(oks, dst)
+											}
+										}
+
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}
+
 	os.Exit(exitCode)
 }
 
@@ -48,74 +118,8 @@ func parseCmdLine() (string, pathList) {
 	return dst, srcs
 }
 
-func isDir(f string) bool {
-	if fi, err := os.Stat(f); err != nil {
-		return false
-	} else {
-		return fi.IsDir()
-	}
-}
-
-func mkTargetPath(dst, src string, isDstDir bool) string {
-	if isDstDir {
-		_, fn := filepath.Split(src)
-		return filepath.Join(dst, fn)
-	} else {
-		return dst
-	}
-}
-
 func printErr(e error) {
 	fmt.Print(os.Args[0], ": ", e.Error(), "\n")
-}
-
-func cp(src, dst string) error {
-
-	srcf, err := os.OpenFile(src, os.O_RDONLY, 0)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return NoSuchFileOrDirErr{src}
-		} else {
-			printErr(err)
-			os.Exit(2)
-		}
-	}
-	defer srcf.Close()
-
-	srcfi, err := srcf.Stat()
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-
-	if srcfi.IsDir() {
-		return OmittingDirErr{src}
-	}
-
-	srcperm := srcfi.Mode().Perm()
-	dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcperm)
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-	defer dstf.Close()
-
-	dstfi, err := dstf.Stat()
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-
-	if os.SameFile(dstfi, srcfi) {
-		// Nothing to perform. One side-effect: atime is modified. It is acceptable?
-		return nil
-	}
-
-	if _, err := io.Copy(dstf, srcf); err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-	return nil
 }
 
 func setUsage() {
@@ -134,13 +138,6 @@ func checkArgsCount() {
 		os.Exit(1)
 	}
 }
-
-func isNotExist(file string) bool {
-	_, err := os.Stat(file)
-	return os.IsNotExist(err)
-}
-
-type pathList []string
 
 func (paths pathList) contains(path string) bool {
 	for _, p := range paths {
@@ -198,5 +195,3 @@ func (err WillNotOverwriteErr) Error() string {
 // 7a- mcp -r /a /b when b does not already exists
 // 7b- mcp -r /a /b when b already exists
 // Every time: check the resulting mode for every new file/dir.
-
-// TODO Next steps: implement -r option.
