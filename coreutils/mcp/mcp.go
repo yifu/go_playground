@@ -44,7 +44,7 @@ func main() {
 	os.Exit(0)
 }
 
-func parseCmdLine() (string, []string) {
+func parseCmdLine() (string, pathList) {
 	dst := os.Args[len(os.Args)-1]
 	srcs := os.Args[1 : len(os.Args)-1]
 	return dst, srcs
@@ -167,7 +167,6 @@ func filterSrcList(dst string, srcs pathList) (oks pathList, errors []error) {
 	return
 }
 
-// TODO refactor every []string in pathList
 type pathList []string
 
 func (paths pathList) contains(path string) bool {
