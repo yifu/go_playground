@@ -69,12 +69,10 @@ func main() {
 	var dir string
 	if len(srcs) > 1 {
 		// When len(srcs) > 1, then dst must be a dir. We check that it is the case:
-		dirfi, err := os.Stat(dst)
-		if err != nil || !dirfi.IsDir() {
+		if !checkIsDir(dst) {
 			printErr(NotADirErr{dst})
 			os.Exit(1)
 		}
-		// We construct the destination file name from the dst dir name.
 		dir = dst
 	}
 
@@ -154,6 +152,11 @@ func checkArgsCount() {
 		flag.Usage()
 		os.Exit(1)
 	}
+}
+
+func checkIsDir(dst string) bool {
+	dirfi, err := os.Stat(dst)
+	return err == nil && dirfi.IsDir()
 }
 
 func (paths pathList) contains(path string) bool {
