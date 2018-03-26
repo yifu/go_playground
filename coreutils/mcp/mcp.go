@@ -77,31 +77,27 @@ func main() {
 					// Nothing to do: dst is just a file, we must copy into it directly.
 				}
 			}
-
+			if dstfi, err := os.Stat(dst); err != nil {
+				if os.IsNotExist(err) {
+				} else {
+					printErr(err)
+					os.Exit(2)
+				}
+			} else if os.SameFile(dstfi, srcfi) {
+				// Nothing to copy.
+				continue
+			}
 			// Open dst, writable this time
-			dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE, srcfi.Mode().Perm())
+			dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcfi.Mode().Perm())
 			if err != nil {
 				printErr(err)
 				os.Exit(2)
 			}
-			dstfi, err := dstf.Stat()
-			if err != nil {
+			if _, err := io.Copy(dstf, srcf); err != nil {
 				printErr(err)
 				os.Exit(2)
 			}
-			if os.SameFile(dstfi, srcfi) {
-				// Nothing to do
-			} else {
-				if err := dstf.Truncate(0); err != nil {
-					printErr(err)
-					os.Exit(2)
-				}
-				if _, err := io.Copy(dstf, srcf); err != nil {
-					printErr(err)
-					os.Exit(2)
-				}
-				oks = append(oks, dst)
-			}
+			oks = append(oks, dst)
 		} else {
 			// When len(srcs) > 1, then dst must be a dir. We check that it is the case:
 			dirfi, err := os.Stat(dst)
@@ -117,32 +113,26 @@ func main() {
 				exitCode = 1
 				continue
 			}
-			dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE, srcfi.Mode().Perm())
+			if dstfi, err := os.Stat(dst); err != nil {
+				if os.IsNotExist(err) {
+				} else {
+					printErr(err)
+					os.Exit(2)
+				}
+			} else if os.SameFile(dstfi, srcfi) {
+				// Nothing to copy.
+				continue
+			}
+			dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcfi.Mode().Perm())
 			if err != nil {
 				printErr(err)
 				os.Exit(2)
 			}
-			// TODO Peut-on lever l'appel à Stat() (et l'appel SameFile()) avant d'ouvir le fichier?
-			// Ainsi s'éviter de modifier le atime, mais aussi on peut appeler OpenFile(...os.O_TRUNC) directement!
-			// Vérifier que l'on peut faire cela dans l'autre branche...
-			dstfi, err := dstf.Stat()
-			if err != nil {
+			if _, err := io.Copy(dstf, srcf); err != nil {
 				printErr(err)
 				os.Exit(2)
 			}
-			if os.SameFile(dstfi, srcfi) {
-				// Nothing to do.
-			} else {
-				if err := dstf.Truncate(0); err != nil {
-					printErr(err)
-					os.Exit(2)
-				}
-				if _, err := io.Copy(dstf, srcf); err != nil {
-					printErr(err)
-					os.Exit(2)
-				}
-				oks = append(oks, dst)
-			}
+			oks = append(oks, dst)
 		}
 	}
 
