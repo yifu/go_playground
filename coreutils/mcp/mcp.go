@@ -15,8 +15,6 @@ import (
 
 type pathList []string
 
-// TODO Placer des defer f.Close() partout où nécessaire.
-
 func main() {
 	setUsage()
 	checkArgsCount()
