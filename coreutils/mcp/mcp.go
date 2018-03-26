@@ -61,8 +61,9 @@ func main() {
 }
 
 func parseCmdLine() (string, pathList) {
-	dst := os.Args[len(os.Args)-1]
-	srcs := os.Args[1 : len(os.Args)-1]
+	args := flag.Args()
+	dst := args[len(args)-1]
+	srcs := args[1 : len(args)-1]
 	return dst, srcs
 }
 
@@ -80,7 +81,7 @@ func setUsage() {
 }
 
 func checkArgsCount() {
-	paramCount := len(os.Args[1:])
+	paramCount := len(flag.Args())
 	if paramCount < 2 {
 		flag.Usage()
 		os.Exit(1)
