@@ -32,7 +32,6 @@ func openSrc(src string) (*os.File, os.FileInfo, error) {
 	return srcf, srcfi, nil
 }
 
-// TODO On ouvre dst en RO dans la branche len(srcs) == 1. Il faut faire la même chose dans l'autre branche (i.e. len(srcs) > 1).
 // TODO Placer des defer f.Close() partout où nécessaire.
 
 func main() {
