@@ -42,6 +42,18 @@ func main() {
 	dst, srcs := parseCmdLine()
 	oks := make(pathList, 0, len(srcs))
 
+	var dir string
+	if len(srcs) > 1 {
+		// When len(srcs) > 1, then dst must be a dir. We check that it is the case:
+		dirfi, err := os.Stat(dst)
+		if err != nil || !dirfi.IsDir() {
+			printErr(NotADirErr{dst})
+			os.Exit(1)
+		}
+		// We construct the destination file name from the dst dir name.
+		dir = dst
+	}
+
 	for _, src := range srcs {
 		// Open src
 		srcf, srcfi, err := openSrc(src)
@@ -77,65 +89,37 @@ func main() {
 					// Nothing to do: dst is just a file, we must copy into it directly.
 				}
 			}
-			if dstfi, err := os.Stat(dst); err != nil {
-				if os.IsNotExist(err) {
-				} else {
-					printErr(err)
-					os.Exit(2)
-				}
-			} else if os.SameFile(dstfi, srcfi) {
-				// Nothing to copy.
-				continue
-			}
-			// Open dst, writable this time
-			dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcfi.Mode().Perm())
-			if err != nil {
-				printErr(err)
-				os.Exit(2)
-			}
-			if _, err := io.Copy(dstf, srcf); err != nil {
-				printErr(err)
-				os.Exit(2)
-			}
-			oks = append(oks, dst)
 		} else {
-			// When len(srcs) > 1, then dst must be a dir. We check that it is the case:
-			dirfi, err := os.Stat(dst)
-			if err != nil || !dirfi.IsDir() {
-				printErr(NotADirErr{dst})
-				os.Exit(1)
-			}
-			// We construct the destination file name from the dst dir name.
 			_, fn := filepath.Split(src)
-			dst := filepath.Join(dst, fn)
-			if oks.contains(dst) {
-				printErr(WillNotOverwriteErr{src, dst})
-				exitCode = 1
-				continue
-			}
-			if dstfi, err := os.Stat(dst); err != nil {
-				if os.IsNotExist(err) {
-				} else {
-					printErr(err)
-					os.Exit(2)
-				}
-			} else if os.SameFile(dstfi, srcfi) {
-				// Nothing to copy.
-				continue
-			}
-			dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcfi.Mode().Perm())
-			if err != nil {
-				printErr(err)
-				os.Exit(2)
-			}
-			if _, err := io.Copy(dstf, srcf); err != nil {
-				printErr(err)
-				os.Exit(2)
-			}
-			oks = append(oks, dst)
+			dst = filepath.Join(dir, fn)
 		}
+		if oks.contains(dst) {
+			printErr(WillNotOverwriteErr{src, dst})
+			exitCode = 1
+			continue
+		}
+		if dstfi, err := os.Stat(dst); err != nil {
+			if os.IsNotExist(err) {
+			} else {
+				printErr(err)
+				os.Exit(2)
+			}
+		} else if os.SameFile(dstfi, srcfi) {
+			// Nothing to copy.
+			continue
+		}
+		// Open dst, writable this time
+		dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcfi.Mode().Perm())
+		if err != nil {
+			printErr(err)
+			os.Exit(2)
+		}
+		if _, err := io.Copy(dstf, srcf); err != nil {
+			printErr(err)
+			os.Exit(2)
+		}
+		oks = append(oks, dst)
 	}
-
 	os.Exit(exitCode)
 }
 
