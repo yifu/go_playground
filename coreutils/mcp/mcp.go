@@ -15,6 +15,26 @@ import (
 
 type pathList []string
 
+func openSrc(src string) (*os.File, os.FileInfo, error) {
+	srcf, err := os.OpenFile(src, os.O_RDONLY, 0)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil, NoSuchFileOrDirErr{src}
+		}
+		printErr(err)
+		os.Exit(2)
+	}
+	srcfi, err := srcf.Stat()
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+	return srcf, srcfi, nil
+}
+
+// TODO On ouvre dst en RO dans la branche len(srcs) == 1. Il faut faire la même chose dans l'autre branche (i.e. len(srcs) > 1).
+// TODO Placer des defer f.Close() partout où nécessaire.
+
 func main() {
 	setUsage()
 	checkArgsCount()
@@ -25,86 +45,106 @@ func main() {
 
 	for _, src := range srcs {
 		// Open src
+		srcf, srcfi, err := openSrc(src)
+		if err != nil {
+			printErr(err)
+			exitCode = 1
+			continue
+		}
+		if srcfi.IsDir() {
+			printErr(OmittingDirErr{srcfi.Name()})
+			exitCode = 1
+			continue
+		}
+		if len(srcs) == 1 {
+			// Open dst, readable only, and check whether its a dir or not.
+			// So we can take action in consequence.
 
-		if srcf, err := os.OpenFile(src, os.O_RDONLY, 0); err != nil {
-			if os.IsNotExist(err) {
-				printErr(NoSuchFileOrDirErr{src})
-				exitCode = 1
+			if dstf, err := os.OpenFile(dst, os.O_RDONLY, 0); err != nil {
+				if os.IsNotExist(err) {
+					// Nothing to do: dst does not exist, and we must copy into the new file.
+				} else {
+					printErr(err)
+					os.Exit(2)
+				}
 			} else {
+				defer dstf.Close()
+				dstfi, err := dstf.Stat()
+				if err != nil {
+					printErr(err)
+					os.Exit(2)
+				}
+				if dstfi.IsDir() {
+					dst = filepath.Join(dst, srcfi.Name())
+				} else {
+					// Nothing to do: dst is just a file, we must copy into it directly.
+				}
+			}
+
+			// Open dst, writable this time
+			dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE, srcfi.Mode().Perm())
+			if err != nil {
 				printErr(err)
 				os.Exit(2)
 			}
-		} else {
-
-			if srcfi, err := srcf.Stat(); err != nil {
+			dstfi, err := dstf.Stat()
+			if err != nil {
 				printErr(err)
 				os.Exit(2)
+			}
+			if os.SameFile(dstfi, srcfi) {
+				// Nothing to do
 			} else {
-				if srcfi.IsDir() {
-					printErr(OmittingDirErr{srcfi.Name()})
-					exitCode = 1
-				} else {
-					if len(srcs) == 1 {
-						// Open dst
-						dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcfi.Mode().Perm())
-						if err != nil {
-							printErr(err)
-							os.Exit(2)
-						} else {
-							if dstfi, err := dstf.Stat(); err != nil {
-								printErr(err)
-								os.Exit(2)
-							} else if os.SameFile(dstfi, srcfi) {
-								fmt.Println("same files")
-								// Nothing to do
-							} else if _, err := io.Copy(dstf, srcf); err != nil {
-								printErr(err)
-								os.Exit(2)
-							}
-						}
-					} else {
-						dirfi, err := os.Stat(dst)
-						if err != nil || !dirfi.IsDir() {
-							printErr(NotADirErr{dst})
-							os.Exit(1)
-						} else {
-							_, fn := filepath.Split(src)
-							dst := filepath.Join(dst, fn)
-							if oks.contains(dst) {
-								printErr(WillNotOverwriteErr{src, dst})
-								exitCode = 1
-							} else {
-								dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE, srcfi.Mode().Perm())
-								if err != nil {
-									printErr(err)
-									os.Exit(2)
-								} else {
-
-									if dstfi, err := dstf.Stat(); err != nil {
-										printErr(err)
-										os.Exit(2)
-									} else if os.SameFile(dstfi, srcfi) {
-										fmt.Println("same files")
-										// Nothing to do.
-									} else {
-										if err := dstf.Truncate(0); err != nil {
-											printErr(err)
-											os.Exit(2)
-										} else {
-											if _, err := io.Copy(dstf, srcf); err != nil {
-												printErr(err)
-												os.Exit(2)
-											} else {
-												oks = append(oks, dst)
-											}
-										}
-
-									}
-								}
-							}
-						}
-					}
+				if err := dstf.Truncate(0); err != nil {
+					printErr(err)
+					os.Exit(2)
 				}
+				if _, err := io.Copy(dstf, srcf); err != nil {
+					printErr(err)
+					os.Exit(2)
+				}
+				oks = append(oks, dst)
+			}
+		} else {
+			// When len(srcs) > 1, then dst must be a dir. We check that:
+			dirfi, err := os.Stat(dst)
+			if err != nil || !dirfi.IsDir() {
+				printErr(NotADirErr{dst})
+				os.Exit(1)
+			}
+			// We construct the destination file name from the dst dir name.
+			_, fn := filepath.Split(src)
+			dst := filepath.Join(dst, fn)
+			if oks.contains(dst) {
+				printErr(WillNotOverwriteErr{src, dst})
+				exitCode = 1
+				continue
+			}
+			dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE, srcfi.Mode().Perm())
+			if err != nil {
+				printErr(err)
+				os.Exit(2)
+			}
+			// TODO Peut-on lever l'appel à Stat() (et l'appel SameFile()) avant d'ouvir le fichier?
+			// Ainsi s'éviter de modifier le atime, mais aussi on peut appeler OpenFile(...os.O_TRUNC) directement!
+			// Vérifier que l'on peut faire cela dans l'autre branche...
+			dstfi, err := dstf.Stat()
+			if err != nil {
+				printErr(err)
+				os.Exit(2)
+			}
+			if os.SameFile(dstfi, srcfi) {
+				// Nothing to do.
+			} else {
+				if err := dstf.Truncate(0); err != nil {
+					printErr(err)
+					os.Exit(2)
+				}
+				if _, err := io.Copy(dstf, srcf); err != nil {
+					printErr(err)
+					os.Exit(2)
+				}
+				oks = append(oks, dst)
 			}
 		}
 	}
