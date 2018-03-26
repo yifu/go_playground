@@ -57,9 +57,7 @@ func main() {
 			continue
 		}
 		if len(srcs) == 1 {
-			// Open dst, readable only, and check whether its a dir or not.
-			// So we can take action in consequence.
-
+			// Open dst, readable only. We will not read into it. It's just to check it exists.
 			if dstf, err := os.OpenFile(dst, os.O_RDONLY, 0); err != nil {
 				if os.IsNotExist(err) {
 					// Nothing to do: dst does not exist, and we must copy into the new file.
