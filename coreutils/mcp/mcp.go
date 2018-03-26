@@ -41,23 +41,12 @@ func main() {
 			_, fn := filepath.Split(src)
 			dst = filepath.Join(dir, fn)
 		}
-		dstf, srcf, err := openFiles(dst, src, oks)
+		var err error
+		oks, err = cp(dst, src, oks)
 		if err != nil {
-			switch err.(type) {
-			case SameFileErr:
-				// When src and dst are the same files, there is no copy going on.
-				// We just keep going on with the next src.
-			default:
-				printErr(err)
-				exitCode = 1
-			}
-			continue
-		}
-		if _, err := io.Copy(dstf, srcf); err != nil {
 			printErr(err)
-			os.Exit(2)
+			exitCode = 1
 		}
-		oks = append(oks, dst)
 	}
 	os.Exit(exitCode)
 }
@@ -167,6 +156,26 @@ func openFiles(dst, src string, oks pathList) (dstf, srcf *os.File, err error) {
 		os.Exit(2)
 	}
 	return
+}
+
+func cp(dst, src string, oks pathList) (pathList, error) {
+	dstf, srcf, err := openFiles(dst, src, oks)
+	if err != nil {
+		switch err.(type) {
+		case SameFileErr:
+			// When src and dst are the same files, there is no copy going on.
+			// We just keep going on with the next src.
+		default:
+			return oks, err
+		}
+	} else {
+		if _, err := io.Copy(dstf, srcf); err != nil {
+			printErr(err)
+			os.Exit(2)
+		}
+		oks = append(oks, dst)
+	}
+	return oks, nil
 }
 
 type SameFileErr struct {
