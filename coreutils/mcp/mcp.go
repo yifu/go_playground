@@ -43,10 +43,11 @@ func main() {
 		}
 		dstf, srcf, err := openFiles(dst, src, oks)
 		if err != nil {
-			if _, ok := err.(SameFileErr); ok {
+			switch err.(type) {
+			case SameFileErr:
 				// When src and dst are the same files, there is no copy going on.
 				// We just keep going on with the next src.
-			} else {
+			default:
 				printErr(err)
 				exitCode = 1
 			}
