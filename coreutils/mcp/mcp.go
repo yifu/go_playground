@@ -14,14 +14,23 @@ import (
 // TODO Implémenter un type spécial: path. Faire remonter ces définition en haut du fichier.
 
 type pathList []string
+type environment struct {
+	oks   pathList
+	isRec bool
+}
 
 func main() {
+	env := environment{}
+
+	flag.BoolVar(&env.isRec, "r", false, "Copy directories recursively.")
+	flag.Parse()
+
 	setUsage()
 	checkArgsCount()
 	exitCode := 0
 
 	dst, srcs := parseCmdLine()
-	oks := make(pathList, 0, len(srcs))
+	env.oks = make(pathList, 0, len(srcs))
 
 	var dir string
 	if len(srcs) > 1 {
@@ -42,7 +51,7 @@ func main() {
 			dst = filepath.Join(dir, fn)
 		}
 		var err error
-		oks, err = cp(dst, src, oks)
+		env, err = cp(dst, src, env)
 		if err != nil {
 			printErr(err)
 			exitCode = 1
@@ -109,7 +118,7 @@ func (paths pathList) contains(path string) bool {
 	return false
 }
 
-func openFiles(dst, src string, oks pathList) (dstf, srcf *os.File, err error) {
+func openFiles(dst, src string, env environment) (dstf, srcf *os.File, err error) {
 	// Open src
 	srcf, err = os.OpenFile(src, os.O_RDONLY, 0)
 	if err != nil {
@@ -128,7 +137,7 @@ func openFiles(dst, src string, oks pathList) (dstf, srcf *os.File, err error) {
 	if srcfi.IsDir() {
 		return nil, nil, OmittingDirErr{src}
 	}
-	if oks.contains(dst) {
+	if env.oks.contains(dst) {
 		return nil, nil, WillNotOverwriteErr{dst, src}
 	}
 	// Stat(dst) first, then only opening it, to avoid creating an empty file.
@@ -149,24 +158,24 @@ func openFiles(dst, src string, oks pathList) (dstf, srcf *os.File, err error) {
 	return
 }
 
-func cp(dst, src string, oks pathList) (pathList, error) {
-	dstf, srcf, err := openFiles(dst, src, oks)
+func cp(dst, src string, env environment) (environment, error) {
+	dstf, srcf, err := openFiles(dst, src, env)
 	if err != nil {
 		switch err.(type) {
 		case SameFileErr:
 			// When src and dst are the same files, there is no copy going on.
 			// We just keep going on with the next src.
 		default:
-			return oks, err
+			return env, err
 		}
 	} else {
 		if _, err := io.Copy(dstf, srcf); err != nil {
 			printErr(err)
 			os.Exit(2)
 		}
-		oks = append(oks, dst)
+		env.oks = append(env.oks, dst)
 	}
-	return oks, nil
+	return env, nil
 }
 
 type SameFileErr struct {
