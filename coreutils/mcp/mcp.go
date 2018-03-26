@@ -32,6 +32,30 @@ func openSrc(src string) (*os.File, os.FileInfo, error) {
 	return srcf, srcfi, nil
 }
 
+func mkDst(dst, src string) string {
+	// Open dst, readable only. We will not read into it. It's just to check it exists.
+	if dstf, err := os.OpenFile(dst, os.O_RDONLY, 0); err != nil {
+		if !os.IsNotExist(err) {
+			printErr(err)
+			os.Exit(2)
+		}
+		// Nothing to do: dst is a filename,
+		// which does not exist yet.
+		// The user is asking to copy and rename at the same time.
+	} else {
+		dstfi, err := dstf.Stat()
+		if err != nil {
+			printErr(err)
+			os.Exit(2)
+		}
+		if dstfi.IsDir() {
+			return filepath.Join(dst, src)
+		}
+		// Nothing to do: dst is a filename, we must copy into it directly.
+	}
+	return dst
+}
+
 // TODO Placer des defer f.Close() partout où nécessaire.
 
 func main() {
@@ -55,6 +79,14 @@ func main() {
 	}
 
 	for _, src := range srcs {
+		switch {
+		case len(srcs) == 1:
+			dst = mkDst(dst, src)
+		case len(srcs) > 1:
+			_, fn := filepath.Split(src)
+			dst = filepath.Join(dir, fn)
+		}
+
 		// Open src
 		srcf, srcfi, err := openSrc(src)
 		if err != nil {
@@ -66,32 +98,6 @@ func main() {
 			printErr(OmittingDirErr{srcfi.Name()})
 			exitCode = 1
 			continue
-		}
-		if len(srcs) == 1 {
-			// Open dst, readable only. We will not read into it. It's just to check it exists.
-			if dstf, err := os.OpenFile(dst, os.O_RDONLY, 0); err != nil {
-				if os.IsNotExist(err) {
-					// Nothing to do: dst does not exist, and we must copy into the new file.
-				} else {
-					printErr(err)
-					os.Exit(2)
-				}
-			} else {
-				defer dstf.Close()
-				dstfi, err := dstf.Stat()
-				if err != nil {
-					printErr(err)
-					os.Exit(2)
-				}
-				if dstfi.IsDir() {
-					dst = filepath.Join(dst, srcfi.Name())
-				} else {
-					// Nothing to do: dst is just a file, we must copy into it directly.
-				}
-			}
-		} else {
-			_, fn := filepath.Split(src)
-			dst = filepath.Join(dir, fn)
 		}
 		if oks.contains(dst) {
 			printErr(WillNotOverwriteErr{src, dst})
