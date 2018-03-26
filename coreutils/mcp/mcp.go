@@ -104,7 +104,7 @@ func main() {
 				oks = append(oks, dst)
 			}
 		} else {
-			// When len(srcs) > 1, then dst must be a dir. We check that:
+			// When len(srcs) > 1, then dst must be a dir. We check that it is the case:
 			dirfi, err := os.Stat(dst)
 			if err != nil || !dirfi.IsDir() {
 				printErr(NotADirErr{dst})
