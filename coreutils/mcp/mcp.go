@@ -93,7 +93,7 @@ func main() {
 			continue
 		}
 		if srcfi.IsDir() {
-			printErr(OmittingDirErr{srcfi.Name()})
+			printErr(OmittingDirErr{src})
 			exitCode = 1
 			continue
 		}
