@@ -84,39 +84,13 @@ func main() {
 			_, fn := filepath.Split(src)
 			dst = filepath.Join(dir, fn)
 		}
-
-		// Open src
-		srcf, srcfi, err := openSrc(src)
+		dstf, srcf, err := openFiles(dst, src, oks)
 		if err != nil {
-			printErr(err)
-			exitCode = 1
-			continue
-		}
-		if srcfi.IsDir() {
-			printErr(OmittingDirErr{src})
-			exitCode = 1
-			continue
-		}
-		if oks.contains(dst) {
-			printErr(WillNotOverwriteErr{src, dst})
-			exitCode = 1
-			continue
-		}
-		if dstfi, err := os.Stat(dst); err != nil {
-			if os.IsNotExist(err) {
-			} else {
+			if _, ok := err.(SameFileErr); !ok {
 				printErr(err)
-				os.Exit(2)
+				exitCode = 1
 			}
-		} else if os.SameFile(dstfi, srcfi) {
-			// Nothing to copy.
 			continue
-		}
-		// Open dst, writable this time
-		dstf, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcfi.Mode().Perm())
-		if err != nil {
-			printErr(err)
-			os.Exit(2)
 		}
 		if _, err := io.Copy(dstf, srcf); err != nil {
 			printErr(err)
@@ -168,7 +142,45 @@ func (paths pathList) contains(path string) bool {
 	return false
 }
 
+func openFiles(dst, src string, oks pathList) (dstf, srcf *os.File, err error) {
+	// Open src
+	srcf, srcfi, err := openSrc(src)
+	if err != nil {
+		return
+	}
+	if srcfi.IsDir() {
+		return nil, nil, OmittingDirErr{src}
+	}
+	if oks.contains(dst) {
+		return nil, nil, WillNotOverwriteErr{src, dst}
+	}
+	if dstfi, err := os.Stat(dst); err != nil {
+		if !os.IsNotExist(err) {
+			printErr(err)
+			os.Exit(2)
+		}
+	} else if os.SameFile(dstfi, srcfi) {
+		// Nothing to copy.
+		return nil, nil, SameFileErr{dst, src}
+	}
+	// Open dst, writable this time
+	dstf, err = os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcfi.Mode().Perm())
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+	return
+}
+
 // TODO Replace those structs with fmt.Errorf(fmt, "")
+
+type SameFileErr struct {
+	dst, src string
+}
+
+func (err SameFileErr) Error() string {
+	return fmt.Sprintf("Same Files %q %q", err.dst, err.src)
+}
 
 type OmittingDirErr struct {
 	dirName string
