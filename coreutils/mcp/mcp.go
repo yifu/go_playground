@@ -97,14 +97,16 @@ func checkIsDir(dst string) bool {
 
 func mkDst(dst, src string) string {
 	// Open dst, readable only. We will not read into it. It's just to check it exists.
+	// TODO Mhh.. We may actually stat() the file directly. Why open it? Not sure now.
 	if dstf, err := os.OpenFile(dst, os.O_RDONLY, 0); err != nil {
-		if !os.IsNotExist(err) {
+		if os.IsNotExist(err) {
+			// Nothing to do: dst is a filename,
+			// which does not exist yet.
+			// The user is asking to copy and rename at the same time.
+		} else {
 			printErr(err)
 			os.Exit(2)
 		}
-		// Nothing to do: dst is a filename,
-		// which does not exist yet.
-		// The user is asking to copy and rename at the same time.
 	} else {
 		dstfi, err := dstf.Stat()
 		if err != nil {
