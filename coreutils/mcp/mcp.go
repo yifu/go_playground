@@ -149,7 +149,7 @@ func openFiles(dst, src string, oks pathList) (dstf, srcf *os.File, err error) {
 		return nil, nil, OmittingDirErr{src}
 	}
 	if oks.contains(dst) {
-		return nil, nil, WillNotOverwriteErr{src, dst}
+		return nil, nil, WillNotOverwriteErr{dst, src}
 	}
 	// Stat(dst) first, then only opening it, to avoid creating an empty file.
 	if dstfi, err := os.Stat(dst); err != nil {
@@ -202,7 +202,7 @@ func (err NoSuchFileOrDirErr) Error() string {
 }
 
 type WillNotOverwriteErr struct {
-	src, dst string
+	dst, src string
 }
 
 func (err WillNotOverwriteErr) Error() string {
