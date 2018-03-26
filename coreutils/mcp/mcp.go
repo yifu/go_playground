@@ -15,47 +15,6 @@ import (
 
 type pathList []string
 
-func openSrc(src string) (*os.File, os.FileInfo, error) {
-	srcf, err := os.OpenFile(src, os.O_RDONLY, 0)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil, NoSuchFileOrDirErr{src}
-		}
-		printErr(err)
-		os.Exit(2)
-	}
-	srcfi, err := srcf.Stat()
-	if err != nil {
-		printErr(err)
-		os.Exit(2)
-	}
-	return srcf, srcfi, nil
-}
-
-func mkDst(dst, src string) string {
-	// Open dst, readable only. We will not read into it. It's just to check it exists.
-	if dstf, err := os.OpenFile(dst, os.O_RDONLY, 0); err != nil {
-		if !os.IsNotExist(err) {
-			printErr(err)
-			os.Exit(2)
-		}
-		// Nothing to do: dst is a filename,
-		// which does not exist yet.
-		// The user is asking to copy and rename at the same time.
-	} else {
-		dstfi, err := dstf.Stat()
-		if err != nil {
-			printErr(err)
-			os.Exit(2)
-		}
-		if dstfi.IsDir() {
-			return filepath.Join(dst, src)
-		}
-		// Nothing to do: dst is a filename, we must copy into it directly.
-	}
-	return dst
-}
-
 // TODO Placer des defer f.Close() partout où nécessaire.
 
 func main() {
@@ -133,6 +92,30 @@ func checkIsDir(dst string) bool {
 	return err == nil && dirfi.IsDir()
 }
 
+func mkDst(dst, src string) string {
+	// Open dst, readable only. We will not read into it. It's just to check it exists.
+	if dstf, err := os.OpenFile(dst, os.O_RDONLY, 0); err != nil {
+		if !os.IsNotExist(err) {
+			printErr(err)
+			os.Exit(2)
+		}
+		// Nothing to do: dst is a filename,
+		// which does not exist yet.
+		// The user is asking to copy and rename at the same time.
+	} else {
+		dstfi, err := dstf.Stat()
+		if err != nil {
+			printErr(err)
+			os.Exit(2)
+		}
+		if dstfi.IsDir() {
+			return filepath.Join(dst, src)
+		}
+		// Nothing to do: dst is a filename, we must copy into it directly.
+	}
+	return dst
+}
+
 func (paths pathList) contains(path string) bool {
 	for _, p := range paths {
 		if p == path {
@@ -144,16 +127,27 @@ func (paths pathList) contains(path string) bool {
 
 func openFiles(dst, src string, oks pathList) (dstf, srcf *os.File, err error) {
 	// Open src
-	srcf, srcfi, err := openSrc(src)
+	srcf, err = os.OpenFile(src, os.O_RDONLY, 0)
 	if err != nil {
-		return
+		if os.IsNotExist(err) {
+			return nil, nil, NoSuchFileOrDirErr{src}
+		}
+		printErr(err)
+		os.Exit(2)
 	}
+	srcfi, err := srcf.Stat()
+	if err != nil {
+		printErr(err)
+		os.Exit(2)
+	}
+	// Various checks on src.
 	if srcfi.IsDir() {
 		return nil, nil, OmittingDirErr{src}
 	}
 	if oks.contains(dst) {
 		return nil, nil, WillNotOverwriteErr{src, dst}
 	}
+	// Stat(dst) first, then only opening it, to avoid creating an empty file.
 	if dstfi, err := os.Stat(dst); err != nil {
 		if !os.IsNotExist(err) {
 			printErr(err)
@@ -163,7 +157,6 @@ func openFiles(dst, src string, oks pathList) (dstf, srcf *os.File, err error) {
 		// Nothing to copy.
 		return nil, nil, SameFileErr{dst, src}
 	}
-	// Open dst, writable this time
 	dstf, err = os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcfi.Mode().Perm())
 	if err != nil {
 		printErr(err)
