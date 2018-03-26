@@ -169,8 +169,6 @@ func openFiles(dst, src string, oks pathList) (dstf, srcf *os.File, err error) {
 	return
 }
 
-// TODO Replace those structs with fmt.Errorf(fmt, "")
-
 type SameFileErr struct {
 	dst, src string
 }
