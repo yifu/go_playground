@@ -63,7 +63,7 @@ func main() {
 func parseCmdLine() (string, pathList) {
 	args := flag.Args()
 	dst := args[len(args)-1]
-	srcs := args[1 : len(args)-1]
+	srcs := args[0 : len(args)-1]
 	return dst, srcs
 }
 
