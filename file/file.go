@@ -86,4 +86,19 @@ func main() {
 		fmt.Println("ok, ")
 		defer dir.Close()
 	}
+
+
+
+	fmt.Println("====")
+
+	if dir, err := os.OpenFile("./tmpdir", os.O_WRONLY, 0); err != nil {
+		fmt.Println("no ok", err)
+		fmt.Printf("type = '%T'\n", err)
+		if v, ok := err.(*os.PathError); ok {
+			fmt.Printf("Path erro = %#v\n", v)
+		}
+	} else {
+		fmt.Println("ok, ")
+		defer dir.Close()
+	}
 }
