@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strconv"
 	"strings"
 )
 
@@ -64,17 +65,27 @@ func main() {
 	const nodeWidth = 2
 
 	curLvl := 0
+	nelt := 0
+	nchar := lastHeapLineWidth
 	for i, p := range heap {
 		lvl := int(math.Log2(float64(i+1))) + 1
 		if curLvl != lvl {
 			curLvl = lvl
+			if nelt == 0 {
+				nelt = 1
+			} else {
+				nelt *= 2
+			}
+			nchar /= 2
+			fmt.Print("|lastHeapLineWidth/nelt=", lastHeapLineWidth/nelt)
 			fmt.Println()
 		}
 
+		spaces := strings.Repeat(" ", (lastHeapLineWidth/nelt)/2)
 		if p == nil {
-			fmt.Print(" ")
+			fmt.Print(spaces + spaces)
 		} else {
-			fmt.Print(p.value, " ")
+			fmt.Print(spaces + strconv.Itoa(p.value) + spaces)
 		}
 	}
 
